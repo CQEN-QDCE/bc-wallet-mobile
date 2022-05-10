@@ -1,0 +1,131 @@
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Contents.json b/app/ios/Media.xcassets/AppIcon.appiconset/Contents.json
+index 7556910..1e3356b 100644
+--- a/app/ios/Media.xcassets/AppIcon.appiconset/Contents.json
++++ b/app/ios/Media.xcassets/AppIcon.appiconset/Contents.json
+@@ -1,62 +1,62 @@
+ {
+-  "images": [
++  "images" : [
+     {
+-      "filename": "Icon-20@2x.png",
+-      "idiom": "iphone",
+-      "scale": "2x",
+-      "size": "20x20"
++      "filename" : "Icon-20@2x.png",
++      "idiom" : "iphone",
++      "scale" : "2x",
++      "size" : "20x20"
+     },
+     {
+-      "filename": "Icon-20@3x.png",
+-      "idiom": "iphone",
+-      "scale": "3x",
+-      "size": "20x20"
++      "filename" : "Icon-20@3x.png",
++      "idiom" : "iphone",
++      "scale" : "3x",
++      "size" : "20x20"
+     },
+     {
+-      "filename": "Icon-29@2x.png",
+-      "idiom": "iphone",
+-      "scale": "2x",
+-      "size": "29x29"
++      "filename" : "Icon-29@2x.png",
++      "idiom" : "iphone",
++      "scale" : "2x",
++      "size" : "29x29"
+     },
+     {
+-      "filename": "Icon-29@3x.png",
+-      "idiom": "iphone",
+-      "scale": "3x",
+-      "size": "29x29"
++      "filename" : "Icon-29@3x.png",
++      "idiom" : "iphone",
++      "scale" : "3x",
++      "size" : "29x29"
+     },
+     {
+-      "filename": "Icon-40@2x.png",
+-      "idiom": "iphone",
+-      "scale": "2x",
+-      "size": "40x40"
++      "filename" : "Icon-40@2x.png",
++      "idiom" : "iphone",
++      "scale" : "2x",
++      "size" : "40x40"
+     },
+     {
+-      "filename": "Icon-40@2x-1.png",
+-      "idiom": "iphone",
+-      "scale": "3x",
+-      "size": "40x40"
++      "filename" : "Icon-40@3x.png",
++      "idiom" : "iphone",
++      "scale" : "3x",
++      "size" : "40x40"
+     },
+     {
+-      "filename": "Icon-60@2x.png",
+-      "idiom": "iphone",
+-      "scale": "2x",
+-      "size": "60x60"
++      "filename" : "Icon-60@2x.png",
++      "idiom" : "iphone",
++      "scale" : "2x",
++      "size" : "60x60"
+     },
+     {
+-      "filename": "Icon-60@3x.png",
+-      "idiom": "iphone",
+-      "scale": "3x",
+-      "size": "60x60"
++      "filename" : "Icon-60@3x.png",
++      "idiom" : "iphone",
++      "scale" : "3x",
++      "size" : "60x60"
+     },
+     {
+-      "filename": "iTunesArtwork.png",
+-      "idiom": "ios-marketing",
+-      "scale": "1x",
+-      "size": "1024x1024"
++      "filename" : "iTunesArtwork.png",
++      "idiom" : "ios-marketing",
++      "scale" : "1x",
++      "size" : "1024x1024"
+     }
+   ],
+-  "info": {
+-    "author": "xcode",
+-    "version": 1
++  "info" : {
++    "author" : "xcode",
++    "version" : 1
+   }
+ }
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@2x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@2x.png
+index 34a7d95..1ea410b 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@2x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@2x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@3x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@3x.png
+index 0d822aa..381d23c 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@3x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@3x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@2x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@2x.png
+index c51ba9e..fe311b5 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@2x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@2x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@3x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@3x.png
+index 981517a..ad1e3a6 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@3x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@3x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@2x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@2x.png
+index 1ab4484..3884b74 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@2x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@2x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@2x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@2x.png
+index 1adb7f6..9a8276e 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@2x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@2x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@3x.png b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@3x.png
+index 07da41b..9738bfd 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@3x.png and b/app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@3x.png differ
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png b/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png
+index 75abec5..9900a16 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png and b/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png differ

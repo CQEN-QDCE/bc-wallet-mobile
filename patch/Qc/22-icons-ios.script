@@ -1,0 +1,11 @@
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Contents.json > patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@2x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-20@3x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@2x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-29@3x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@2x-1.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@2x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-40@3x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@2x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/Icon-60@3x.png >> patch/Qc/22-icons-ios.patch
+git diff app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png >> patch/Qc/22-icons-ios.patch
