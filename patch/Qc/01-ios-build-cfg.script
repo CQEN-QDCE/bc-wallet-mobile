@@ -1,0 +1,3 @@
+git diff app/ios/AriesBifold.xcodeproj/project.pbxproj > patch/Qc/01-ios-build-cfg.patch
+git diff app/ios/AriesBifold.xcodeproj/project.pbxproj >> patch/Qc/01-ios-build-cfg.patch
+git diff app/ios/AriesBifold/Info.plist >> patch/Qc/01-ios-build-cfg.patch

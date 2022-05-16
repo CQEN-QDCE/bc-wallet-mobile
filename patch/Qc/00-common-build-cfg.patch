@@ -1,0 +1,11 @@
+diff --git a/app/app.json b/app/app.json
+index 65f26f2..c74ef9f 100644
+--- a/app/app.json
++++ b/app/app.json
+@@ -1,4 +1,4 @@
+ {
+-  "name": "BCWallet",
+-  "displayName": "BC Wallet"
++  "name": "PortefeuilleQC",
++  "displayName": "Portefeuille QC"
+ }
