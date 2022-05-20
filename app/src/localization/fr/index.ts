@@ -198,11 +198,12 @@ const translation = {
         "FirstPageBody2": "Vous ajoutez vos cartes et documents numériques et les utilisez pour accéder aux services en ligne et bénéficier d'un traitement plus rapide des services.",
         "FirstPageBody3": "Avec le portefeuille QC, vous êtes propriétaire de vos données. Vous gardez le contrôle total et ne partagez que ce qui est nécessaire.",
         "SecondPageTitle": "Stocker et sécuriser les informations d'identification",
-        "SecondPageBody": "Les justificatifs numériques sont les versions numériques des cartes et documents que vous connaissez déjà, tels que les cartes de membre et les permis de conduire. Ils sont stockés en toute sécurité dans cette application de portefeuille numérique, uniquement sur cet appareil.",
+        "SecondPageBody": "Les justificatifs numériques sont les versions numériques des cartes et documents que vous connaissez déjà, tels que les cartes de membre et les permis de conduire. \n\nIls sont stockés en toute sécurité dans cette application de portefeuille numérique, uniquement sur cet appareil.",
         "ThirdPageTitle": "Ne partagez que ce qui est nécessaire",
         "ThirdPageBogy": "Pour utiliser -“prouver des choses“- vos informations d'identification, en ligne ou en personne, vous scannez un code QR pour commencer. \n\nVous ne partagez que les parties d'une information d'identification nécessaires à une situation donnée, ce qui est préférable pour la confidentialité.",
         "FourthPageTitle": "Prenez le contrôle de vos informations",
         "FourthPageBody": "Vous avez le contrôle de ce que vous prouvez, quand et comment, à partir de vos pouvoirs, et vous approuvez chaque utilisation. \n\nLe gouvernement du Québec n'est pas informé lorsque vous utilisez vos titres.",
+        "ButtonGetStarted": "Débuter",
     }
 }
 
