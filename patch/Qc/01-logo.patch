@@ -21,3 +21,12 @@ diff --git a/bifold b/bifold
 @@ -1 +1 @@
 -Subproject commit 0495a19e37efb4cd78ea3c613c83a2539be67507
 +Subproject commit 0495a19e37efb4cd78ea3c613c83a2539be67507-dirty
+diff --git a/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png b/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png
+index 9900a16..680b4e3 100644
+Binary files a/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png and b/app/ios/Media.xcassets/AppIcon.appiconset/iTunesArtwork.png differ
+diff --git a/bifold b/bifold
+--- a/bifold
++++ b/bifold
+@@ -1 +1 @@
+-Subproject commit 0495a19e37efb4cd78ea3c613c83a2539be67507
++Subproject commit 0495a19e37efb4cd78ea3c613c83a2539be67507-dirty
