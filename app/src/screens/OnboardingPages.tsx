@@ -8,6 +8,7 @@ import SecureImage from "../assets/img/secure-image.svg";
 import { Button, ButtonType, Theme, createStyles } from "aries-bifold";
 import { GenericFn } from "aries-bifold";
 import { testIdWithKey } from "aries-bifold";
+import { ScrollView } from "react-native-gesture-handler";
 
 const endPage = (onTutorialCompleted: GenericFn, theme: Theme['OnboardingTheme']) => {
   const defaultStyle = createStyles(theme);
@@ -21,17 +22,17 @@ const endPage = (onTutorialCompleted: GenericFn, theme: Theme['OnboardingTheme']
       <View style={{ alignItems: "center" }}>
         <SecureImage {...imageDisplayOptions} />
       </View>
-      <View style={{ marginLeft: 20, marginRight: 20, marginTop: 30 }}>
+      <ScrollView style={{ marginLeft: 20, marginRight: 20, marginTop: 30 }}>
         <Text style={[defaultStyle.headerText, { fontSize: 18 }]}>
-          Take control of your information
+        Prenez le contrôle de vos informations
         </Text>
         <Text style={[defaultStyle.bodyText, { marginTop: 20 }]}>
-          You have control of what, when, and how you prove things from your
-          credentials, and you approve each use.
-          {"\n\n"}The Government of British Columbia is not told when you use
-          your credentials.
+        Vous avez le contrôle sur ce que vous prouvez, quand et comment, à partir de vos
+          justificatifs, et vous approuvez chaque utilisation.
+          {"\n\n"}Le gouvernement du Québec n'est pas informé lorsque vous utilisez
+          vos titres de compétences.
         </Text>
-      </View>
+      </ScrollView>
       <View
         style={{
           marginTop: "auto",
@@ -72,7 +73,7 @@ const startPages = (theme: Theme) => {
       <Text
         style={[defaultStyle.headerText, { marginLeft: 20, marginRight: 20 }]}
       >
-        Welcome
+        Bienvenue
       </Text>
       <Text
         style={[
@@ -80,8 +81,8 @@ const startPages = (theme: Theme) => {
           { marginLeft: 20, marginTop: 35, marginRight: 20 },
         ]}
       >
-        BC Wallet is a secure, private and easy way to prove your identity
-        online and in person.
+        Le portefeuille québécois est un moyen sûr, privé et facile de prouver votre identité
+        en ligne et en personne.
       </Text>
       <Text
         style={[
@@ -89,8 +90,8 @@ const startPages = (theme: Theme) => {
           { marginLeft: 20, marginTop: 25, marginRight: 20 },
         ]}
       >
-        You add your digital cards and documents and use them to gain access to
-        online services, and experience faster service processing.
+        Vous ajoutez vos cartes et documents numériques et les utilisez pour accéder aux
+        services en ligne, et bénéficier d'un traitement plus rapide des services.
       </Text>
       <Text
         style={[
@@ -98,8 +99,8 @@ const startPages = (theme: Theme) => {
           { marginLeft: 20, marginTop: 25, marginRight: 20 },
         ]}
       >
-        With BC Wallet, you own your data. You retain full control and share
-        only what is needed.{" "}
+        Avec le portefeuille québécois, vous êtes propriétaire de vos données. Vous gardez le contrôle total et ne partagez
+        seulement ce qui est nécessaire.{" "}
       </Text>
     </>
   );
@@ -112,13 +113,13 @@ const guides: Array<{
 }> = [
   {
     image: CredentialList,
-    title: "Store and secure credentials",
-    body: "Digital credentials are the digital versions of cards and documents you already know, such as membership cards and licenses.\n\nThey are stored securely in this digital wallet app, only on this device.",
+    title: "Stocker et sécuriser les informations d'identification",
+    body: "Les justificatifs numériques sont les versions numériques des cartes et documents que vous connaissez déjà, tels que les cartes de membre et les permis de conduire. Ils sont stockés en toute sécurité dans cette application de portefeuille numérique, uniquement sur cet appareil.",
   },
   {
     image: ScanShare,
-    title: "Share only what is necessary",
-    body: "To use—“prove things”— with your credentials, online or in person, you’ll scan a QR code to start things off.\n\nYou only share the parts of a credential necessary for a situation, which is better for privacy.",
+    title: "Ne partagez que ce qui est nécessaire",
+    body: "Pour utiliser - \"prouver des choses\" - vos informations d'identification, en ligne ou en personne, vous scannez un code QR pour commencer. Vous ne partagez que les parties d'une information d'identification nécessaires à une situation donnée, ce qui est préférable pour la confidentialité.",
   },
 ];
 
