@@ -1,28 +1,6 @@
 
 v1.0.1
 
-Build #187
-
-- Connect to ledger on on startup to improve performance.
-
-Build #186
-
-- Expose credential list testIDs #367.
-
-Build #185
-
-- Fixed stuck on waiting screen #360.
-
-Build #184
-
-- Fix testIDs on credentials screen(s) #349;
-- Add professional French translation; #224;
-- Fix issue with LSBC credential issuance #337;
-- Fix proof details style button style #332;
-- Fix style of revoked credential #343;
-- Fix credential offer covering top header #284;
-- Update loading activity indicator;
-
 Build #175
 
 - Fix missing background in safe area overflow #341;

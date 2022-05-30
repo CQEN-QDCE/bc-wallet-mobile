@@ -328,7 +328,7 @@ export const ListItems = StyleSheet.create({
     ...TextTheme.normal,
   },
   revoked: {
-    backgroundColor: ColorPallet.notification.error,
+    backgroundColor: ColorPallet.semantic.error,
     borderColor: ColorPallet.notification.errorBorder,
   },
   contactBackground: {
