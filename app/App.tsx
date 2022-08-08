@@ -22,6 +22,7 @@ const { theme, localization, configuration } = bcwallet;
 initLanguages(localization);
 const App = () => {
   const [agent, setAgent] = useState<Agent | undefined>(undefined);
+
   initStoredLanguage();
 
   useEffect(() => {
