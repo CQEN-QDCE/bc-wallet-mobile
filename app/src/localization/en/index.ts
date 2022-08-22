@@ -192,7 +192,7 @@ const translation = {
   },
   "OnboardingPages": {
     "FirstPageTitle": "Welcome",
-    "FirstPageBody1": "BC Wallet is a secure, private and easy way to prove your identity online and in person.",
+    "FirstPageBody1": "QC Wallet is a secure, private and easy way to prove your identity online and in person.",
     "FirstPageBody2": "You add your digital cards and documents and use them to gain access to online services, and experience faster service processing.",
     "FirstPageBody3": "With BC Wallet, you own your data. You retain full control and share only what is needed.",
     "SecondPageTitle": "Store and secure credentials",
