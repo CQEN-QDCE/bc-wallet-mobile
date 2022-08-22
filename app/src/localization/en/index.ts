@@ -1,5 +1,9 @@
 // prettier-ignore
 const translation = {
+  "BCID": {
+    "GetID": "Get BCID",
+    "GetDigitalID": "Get your BC Digital ID",
+  },
   "Global": {
     "EnterPin": "Enter Pin",
     "6DigitPin": "6 Digit Pin",
@@ -181,6 +185,10 @@ const translation = {
   "Loading": {
     "TakingTooLong": "This is taking longer than usual. You can return to home or continue waiting.",
     "BackToHome": "Go back to home"
+  },
+  "NetInfo": {
+    "NoInternetConnectionTitle": "No internet connection",
+    "NoInternetConnectionMessage": "You're unable to access services using BC Wallet or receive credentials until you're back online.\n\nPlease check your internet connection."
   },
   "OnboardingPages": {
     "FirstPageTitle": "Welcome",
