@@ -15,6 +15,7 @@ const localization = _merge({}, translationResources, {
     en: {translation: en},
     fr: {translation: fr}
 })
+
 const oca = require('./assets/bundles/oca.json');
 
 const configuration: ConfigurationContext = {
@@ -22,9 +23,9 @@ const configuration: ConfigurationContext = {
   splash: Splash,
   terms: Terms,
   homeContentView: BCIDView,
-  OCABundle: {oca: oca, branding: branding},
+  OCABundle: { oca: oca, branding: branding},
   useBiometry: UseBiometry,
-  record: Record
+  record: Record,
 };
 
 export default { theme, localization, configuration };
