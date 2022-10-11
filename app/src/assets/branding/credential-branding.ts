@@ -36,6 +36,13 @@ const idCardOverlay = {
   footer: { color: '#FFFFFF' },
 }
 
+const QCCardTest = {
+  backgroundColor: '#1c639b',
+  header: {
+    imageSource: require('./QC_logo.png'),
+  },
+}
+
 const branding: Record<string, Overlay> = {
   // ↓↓↓ https://github.com/bcgov/bc-wallet-mobile/discussions/370
   'AuJrigKQGRLJajKAebTgWu:2:Member Card:1.5.1': demoMemberCardOverlay /* LSBC (TEST) */,
@@ -51,6 +58,8 @@ const branding: Record<string, Overlay> = {
   'Ui6HA36FvN83cEtmYYHxrn:2:unverified_person:0.1.0': idCardOverlay /* Unverified Person (DEV) */,
   'XZQpyaFa9hBUdJXfKHUvVg:2:unverified_person:0.1.0': idCardOverlay /* Unverified Person (TEST) */,
   '9wVuYYDEDtpZ6CYMqSiWop:2:unverified_person:0.1.0': idCardOverlay /* Unverified Person (DEV) */,
+  // ↓↓↓ QC tests
+  "Ep31SvFAetugFPe5CGzJxt:2:Attestation numérique d'identité gouvernemental (EXP):1.0": QCCardTest,
 }
 
 export default branding
