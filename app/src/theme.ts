@@ -93,6 +93,7 @@ interface GrayscaleColors {
   black: string
   darkGrey: string
   mediumGrey: string
+  grey: string
   lightGrey: string
   veryLightGrey: string
   white: string
@@ -161,7 +162,7 @@ const GrayscaleColors: GrayscaleColors = {
   black: '#000000',
   darkGrey: '#4E5662',
   mediumGrey: '#6B778A',
-  Grey: '#8893A2',
+  grey: '#8893A2',
   lightGrey: '#C5CAD2',
   veryLightGrey: '#F1F1F2',
   white: '#FFFFFF',
