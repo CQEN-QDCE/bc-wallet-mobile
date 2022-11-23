@@ -4,13 +4,15 @@
   "description": "![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "install:bifold": "cd bifold/core && npm ci",
     "install:app": "cd app && npm ci",
     "install:all": "run-s install:bifold install:app",
     "build:bifold": "cd bifold/core && npm run prepack",
     "build:app": "cd app && npm run prepack --if-present",
     "build:all": "run-s build:bifold build:app",
+    "lint": "cd app && npm run lint --if-present && cd ../bifold/core && npm run lint --if-present",
+    "prettier": "cd app && npm run prettier --if-present && cd ../bifold/core && npm run prettier --if-present",
+    "test": "cd app && npm run test --if-present && cd ../bifold/core && npm run test --if-present",
     "prepare": "run-s install:all build:all"
   },
   "repository": {
