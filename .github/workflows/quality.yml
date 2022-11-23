@@ -34,9 +34,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-${{ env.cacheId }}-
 
+      - name: Install submodules
+        run: |
+          git submodule update --init --recursive
+
       - name: Install dependencies
         run: |
-          ls && npm version && npm ci
+          npm version && npm ci
 
       - name: Check style
         run: |
@@ -68,6 +72,10 @@ jobs:
           key: ${{ runner.os }}-node-${{ env.cacheId }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-${{ env.cacheId }}-
+
+      - name: Install submodules
+        run: |
+          git submodule update --init --recursive
 
       - name: Install dependencies
         run: |
