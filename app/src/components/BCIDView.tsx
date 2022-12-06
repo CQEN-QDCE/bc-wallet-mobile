@@ -10,7 +10,7 @@ import {
   Screens,
   DispatchAction,
   useStore,
-  useTheme
+  useTheme,
 } from 'aries-bifold'
 import React, { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -283,13 +283,6 @@ const BCIDView: React.FC = () => {
             onPress={onGetIdTouched}
             buttonType={!workflowInFlight ? ButtonType.Secondary : ButtonType.Primary}
             disabled={workflowInFlight}
-            icon={
-              workflowInFlight ? (
-                <Animated.View style={[{ transform: [{ rotate: rotation }] }]}>
-                  <Icon style={{ color: ColorPallet.grayscale.white }} size={35} name="refresh" />
-                </Animated.View>
-              ) : <CredentialIcon style={{ marginRight: 10 }} />
-            }
           />
         </View>
       )}
