@@ -1,10 +1,9 @@
 name: Native Build & Test
 
 env:
-  cacheId: "11" # increment to expire the cache
+  cacheId: "12" # increment to expire the cache
   appBuildNumber: ${{ github.run_number }}
-  appBuildVersion: "1.0.4"
-
+  appBuildVersion: "1.0.5"
 
 on:
   workflow_dispatch:
@@ -140,17 +139,12 @@ jobs:
         # Actual environment variables are not being picked up
         # by the build so they're put into an .env file.
       - name: Create environment settings
-        if: env.MEDIATOR_URL != null && env.IAS_PORTAL_URL != null && env.IAS_AGENT_INVITE_URL != null
+        if: env.MEDIATOR_URL != null
         working-directory: app
         env:
           MEDIATOR_URL: ${{ secrets.MEDIATOR_URL }}
-          IAS_PORTAL_URL: ${{ secrets.IAS_PORTAL_URL }}
-          IAS_AGENT_INVITE_URL: ${{ secrets.IAS_AGENT_INVITE_URL }}
         run: |
           echo "MEDIATOR_URL=${MEDIATOR_URL}" >.env
-          echo "IAS_PORTAL_URL=${IAS_PORTAL_URL}" >>.env
-          echo "IAS_AGENT_INVITE_URL=${IAS_AGENT_INVITE_URL}" >>.env
-
       # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
       - name: Create Provisioning Profile
         if: github.ref_name == 'main' && needs.check-ios-secrets.outputs.isReleaseBuild == 'true'
@@ -279,16 +273,12 @@ jobs:
         # Actual environment variables are not being picked up
         # by the build so they're put into an .env file.
       - name: Create environment settings
-        if: env.MEDIATOR_URL != null && env.IAS_PORTAL_URL != null && env.IAS_AGENT_INVITE_URL != null
+        if: env.MEDIATOR_URL != null
         working-directory: app
         env:
           MEDIATOR_URL: ${{ secrets.MEDIATOR_URL }}
-          IAS_PORTAL_URL: ${{ secrets.IAS_PORTAL_URL }}
-          IAS_AGENT_INVITE_URL: ${{ secrets.IAS_AGENT_INVITE_URL }}
         run: |
           echo "MEDIATOR_URL=${MEDIATOR_URL}" >.env
-          echo "IAS_PORTAL_URL=${IAS_PORTAL_URL}" >>.env
-          echo "IAS_AGENT_INVITE_URL=${IAS_AGENT_INVITE_URL}" >>.env
 
       - name: Android debug build
         if: github.ref_name != 'main' || needs.check-android-secrets.outputs.isReleaseBuild != 'true'
@@ -378,7 +368,7 @@ jobs:
 
       - name: run-aath-agents-ngrok
         if: ${{ matrix.mobile-platform=='-p Android' }}
-        uses: ./.github/workflows/run-aath-agents
+        uses: ./.github/workflows/actions/run-aath-agents
         with:
           USE_NGROK: "-n"
 
