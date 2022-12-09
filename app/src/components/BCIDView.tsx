@@ -10,18 +10,17 @@ import {
   Screens,
   DispatchAction,
   useStore,
-  useTheme
+  useTheme,
 } from 'aries-bifold'
 import React, { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View, Linking, Platform, Animated } from 'react-native'
 import { Config } from 'react-native-config'
 import { InAppBrowser, RedirectResult } from 'react-native-inappbrowser-reborn'
-
-import { BCState, BCDispatchAction } from '../store'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 
 import CredentialIcon from '../assets/img/credentialIcon.svg'
+import { BCState, BCDispatchAction } from '../store'
 
 const legacyDidKey = '_internal/legacyDid' // TODO:(jl) Waiting for AFJ export of this.
 const trustedInvitationIssuerRe =
@@ -284,13 +283,13 @@ const BCIDView: React.FC = () => {
             buttonType={!workflowInFlight ? ButtonType.Secondary : ButtonType.Primary}
             disabled={workflowInFlight}
           >
-            {
-              workflowInFlight ? (
-                <Animated.View style={[{ transform: [{ rotate: rotation }] }]}>
-                  <Icon style={{ color: ColorPallet.grayscale.white }} size={35} name="refresh" />
-                </Animated.View>
-              ) : <CredentialIcon style={{ marginRight: 10 }} />
-            }
+            {workflowInFlight ? (
+              <Animated.View style={[{ transform: [{ rotate: rotation }] }]}>
+                <Icon style={{ color: ColorPallet.grayscale.white }} size={35} name="refresh" />
+              </Animated.View>
+            ) : (
+              <CredentialIcon style={{ marginRight: 10 }} />
+            )}
           </Button>
         </View>
       )}
