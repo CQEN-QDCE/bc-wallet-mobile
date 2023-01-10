@@ -10,8 +10,12 @@
     "build:bifold": "cd bifold/core && npm run typecheck && npm run prepack",
     "build:app": "cd app && npm run typecheck && npm run prepack --if-present",
     "build:all": "run-s build:bifold build:app",
+    "lint": "cd app && npm run lint --if-present && cd ../bifold/core && npm run lint --if-present",
+    "prettier": "cd app && npm run prettier --if-present && cd ../bifold/core && npm run prettier --if-present",
     "prepare": "run-s install:all build:all",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:app && npm run test:bifold",
+    "test:app": "cd app && npm run test:coverage --if-present",
+    "test:bifold": "cd bifold/core && npm run test:coverage --if-present",
     "typecheck": "cd app && npm run typecheck"
   },
   "repository": {

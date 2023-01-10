@@ -15,7 +15,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start --reset-cache",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx --color .",
     "postinstall:copy-patches": "copyfiles -V -u 4 \"../bifold/app/patches/*\" \"./patches/\"",
     "postinstall:patch": "npx patch-package",
     "postinstall": "run-s postinstall:copy-patches postinstall:patch",
