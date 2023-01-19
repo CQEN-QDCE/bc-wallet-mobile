@@ -17,10 +17,10 @@ import EmptyList from './components/EmptyList'
 import { PINValidationRules } from './constants'
 import en from './localization/en'
 import fr from './localization/fr'
+import TermsStack from './navigators/TermsStack'
 import Developer from './screens/Developer'
 import { pages } from './screens/OnboardingPages'
 import Splash from './screens/Splash'
-import Terms from './screens/Terms'
 import { defaultTheme as theme } from './theme'
 
 const localization = merge({}, translationResources, {
@@ -34,7 +34,7 @@ const configuration: ConfigurationContext = {
   ...defaultConfiguration,
   pages,
   splash: Splash,
-  terms: Terms,
+  terms: TermsStack,
   OCABundle: new types.oca.DefaultOCABundleResolver().loadBundles(
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     require('./assets/branding/oca-bundle-qc.json') as Bundles
