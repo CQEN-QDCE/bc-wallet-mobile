@@ -136,8 +136,7 @@ const translation = {
             '\n' +
             ' Where\n' +
             '\n' +
-            ' (b) your breach of any provision of this EULA\n' +
-            '\n',
+            ' (b) your breach of any provision of this EULA',
         },
       },
       Privacy: {
@@ -150,8 +149,7 @@ const translation = {
             '\n' +
             'https://www.quebec.ca/gouvernement/ministere/cybersecurite-numerique,\n' +
             '\n' +
-            'including accessing the Help Function for the licensed application or related content at https://www.quebec.ca/gouvernement/ministere/cybersecurite-numerique, certain information will be provided to you in accordance with the Province\'s Privacy Statement for Government Websites. Certain information is also collected as part of the licence application as set out in the Quebec Wallet App Privacy Policy (the "Privacy Policy"), which is incorporated by reference into and forms part of this EULA. You consent to the collection by the Licensed App of such information which, together with your Content, is stored locally on your device and is not accessible to the Province, except in cases where you choose to provide information to the Province as set forth in the Privacy Policy. Any information you provide to the Province that is "personal information", as defined in the Quebec Freedom of Information and Protection of Privacy Act ("the Act"), is collected by the Province pursuant to section 26c of the Act, for the purposes set out in the Privacy Policy. Any questions regarding the collection of this information may be directed to the contact person identified in Section 11. The consents you have provided pursuant to this section will continue until you revoke them in writing to the contact person identified in section 11, at which time this EULA will terminate immediately in accordance with section 9.\n' +
-            '\n',
+            'including accessing the Help Function for the licensed application or related content at https://www.quebec.ca/gouvernement/ministere/cybersecurite-numerique, certain information will be provided to you in accordance with the Province\'s Privacy Statement for Government Websites. Certain information is also collected as part of the licence application as set out in the Quebec Wallet App Privacy Policy (the "Privacy Policy"), which is incorporated by reference into and forms part of this EULA. You consent to the collection by the Licensed App of such information which, together with your Content, is stored locally on your device and is not accessible to the Province, except in cases where you choose to provide information to the Province as set forth in the Privacy Policy. Any information you provide to the Province that is "personal information", as defined in the Quebec Freedom of Information and Protection of Privacy Act ("the Act"), is collected by the Province pursuant to section 26c of the Act, for the purposes set out in the Privacy Policy. Any questions regarding the collection of this information may be directed to the contact person identified in Section 11. The consents you have provided pursuant to this section will continue until you revoke them in writing to the contact person identified in section 11, at which time this EULA will terminate immediately in accordance with section 9.',
         },
       },
       AppAccess: {
@@ -166,8 +164,7 @@ const translation = {
             '\n' +
             '(a) dealing with any claim you or any third party may have in connection with the Authorized Application;  \n' +
             '\n' +
-            'b) your possession and/or use of the Permitted Application.\n' +
-            '\n',
+            'b) your possession and/or use of the Permitted Application.',
         },
       },
       More: {

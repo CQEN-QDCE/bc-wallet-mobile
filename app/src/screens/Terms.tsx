@@ -111,7 +111,7 @@ const Terms: React.FC = () => {
         <AccordionItem
           customTitle={() => <Text style={[style.title]}>{t('TermsV2.Consent.PersonalUse.subsection.title')}</Text>}
           customBody={() => (
-            <Text style={[style.bodyText, { marginTop: 10 }]}>{t('TermsV2.Consent.PersonalUse.subsection.body')}</Text>
+            <Text style={[style.bodyText, { margin: 20 }]}>{t('TermsV2.Consent.PersonalUse.subsection.body')}</Text>
           )}
         ></AccordionItem>
 
@@ -122,18 +122,19 @@ const Terms: React.FC = () => {
         <AccordionItem
           customTitle={() => <Text style={[style.title]}>{t('TermsV2.Consent.IdentityTheft.subsection.title')}</Text>}
           customBody={() => (
-            <Text style={[style.bodyText, { marginTop: 10 }]}>
-              {t('TermsV2.Consent.IdentityTheft.subsection.body')}
-            </Text>
+            <Text style={[style.bodyText, { margin: 20 }]}>{t('TermsV2.Consent.IdentityTheft.subsection.body')}</Text>
           )}
         ></AccordionItem>
 
         <Text style={[style.title, { marginTop: 20 }]}>{t('TermsV2.Consent.Privacy.title')}</Text>
-        <Text style={[style.bodyText, { marginTop: 20, marginBottom: 20 }]}>{t('TermsV2.Consent.Privacy.body')}</Text>
+        <Text style={[style.bodyText, { marginTop: 20, marginBottom: 20, marginVertical: 20 }]}>
+          {t('TermsV2.Consent.Privacy.body')}
+        </Text>
         <AccordionItem
+          containerStyle={{ marginBottom: 20 }}
           customTitle={() => <Text style={[style.title]}>{t('TermsV2.Consent.Privacy.subsection.title')}</Text>}
           customBody={() => (
-            <Text style={[style.bodyText, { marginTop: 10 }]}>{t('TermsV2.Consent.Privacy.subsection.body')}</Text>
+            <Text style={[style.bodyText, { margin: 20 }]}>{t('TermsV2.Consent.Privacy.subsection.body')}</Text>
           )}
         ></AccordionItem>
 
