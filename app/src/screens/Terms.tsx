@@ -15,7 +15,6 @@ import {
 import React, { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, Text, View, Linking } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AccordionItem } from '../components/react-native-accordion-list-view'
 
