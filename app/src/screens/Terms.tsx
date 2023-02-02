@@ -138,9 +138,6 @@ const Terms: React.FC = () => {
           )}
         ></AccordionItem>
 
-        <Text style={[style.title, { marginTop: 20 }]}>{t('TermsV2.Consent.More.title')}</Text>
-        <Text style={[style.bodyText, { marginTop: 20 }]}>{t('TermsV2.Consent.More.body')}</Text>
-
         <View style={[style.controlsContainer]}>
           {!(store.onboarding.didAgreeToTerms && store.authentication.didAuthenticate) && (
             <>
