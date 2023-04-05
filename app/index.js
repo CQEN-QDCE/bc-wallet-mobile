@@ -49,7 +49,6 @@ const { createNavigationContainer } = Bugsnag.getPlugin('reactNavigation')
 // except now it tracks route information to send with your error reports
 const BugsnagNavigationContainer = createNavigationContainer(NavigationContainer)
 
-
 const { theme } = bcwallet
 
 const { ColorPallet } = theme
