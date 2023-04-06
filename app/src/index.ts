@@ -40,10 +40,6 @@ const configuration: ConfigurationContext = {
   pages,
   splash: Splash,
   terms: TermsStack,
-  OCABundle: new types.oca.DefaultOCABundleResolver().loadBundles(
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('./assets/branding/oca-bundle-qc.json') as Bundles
-  ),
   useBiometry: UseBiometry,
   credentialListHeaderRight: AddCredentialButton,
   credentialListOptions: AddCredentialSlider,
