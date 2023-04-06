@@ -39,4 +39,9 @@ export interface AccordionItemProps {
    *  @param {boolean} isOpen the current state of the accordion item
    */
   onPress?: (isOpen: boolean) => void
+  /**
+   *  An optional param to support test ID 
+   *  default value is ''
+   */
+  testID?: string
 }

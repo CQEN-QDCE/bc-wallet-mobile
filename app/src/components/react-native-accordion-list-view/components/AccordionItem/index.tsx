@@ -16,6 +16,7 @@ const AccordionItem = ({
   isRTL = false,
   isOpen = false,
   onPress = undefined,
+  testID,
 }: AccordionItemProps) => {
   const [showContent, setShowContent] = useState(isOpen)
   const animationController = useRef(new Animated.Value(isOpen ? 1 : 0)).current
@@ -44,7 +45,7 @@ const AccordionItem = ({
   })
   return (
     <View style={[styles.container, containerStyle]}>
-      <Pressable onPress={() => toggleListItem()}>
+      <Pressable onPress={() => toggleListItem()} testID={testID}>
         <View style={styles.titleContainer}>
           {(!isRTL || I18nManager.isRTL) && customTitle()}
           <Animated.View style={{ transform: [{ rotateZ: arrowTransform }] }}>

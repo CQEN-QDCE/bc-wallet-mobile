@@ -1,3 +1,4 @@
+import { testIdWithKey } from 'aries-bifold'
 import React, { useState } from 'react'
 import { FlatList } from 'react-native'
 
@@ -30,6 +31,7 @@ const AccordionList = ({
           setCurrentlyOpen(item)
         }
       }}
+      testID={testIdWithKey('AccordionItem')}
     />
   )
   return <FlatList data={data} renderItem={renderItem} keyExtractor={(item, index) => index.toString()} {...props} />
