@@ -1,7 +1,7 @@
 name: Native Build & Test
 
 env:
-  cacheId: "12" # increment to expire the cache
+  cacheId: "13" # increment to expire the cache
   appBuildNumber: ${{ github.run_number }}
   appBuildVersion: "1.0.5"
 
@@ -64,7 +64,7 @@ jobs:
       - name: Configure ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.6
+          ruby-version: 2.7
 
       - name: What XCode are we using?
         run: |
@@ -232,24 +232,23 @@ jobs:
           --apple-id ${{ secrets.APPLE_ID }} \
           --password ${{ secrets.APPLE_ID_PASSWD }} \
           --enable-package-validation \
-          --max-build-processing-wait 10 \
+          --max-build-processing-wait 25 \
           --testflight \
           --beta-group "The Team" "IDIM Team" \
           --whats-new "Release ${VERSION_NAME}-${GITHUB_RUN_NUMBER}"
 
-      - name: Ship to SauceLabs
+      - name: Ship to LambdaTest
         if: github.ref_name == 'main' && needs.check-ios-secrets.outputs.isReleaseBuild == 'true'
         working-directory: app/ios
         env:
-          SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
-          SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
+          LAMBDA_USERNAME: ${{ secrets.LAMBDA_USERNAME }}
+          LAMBDA_ACCESS_KEY: ${{ secrets.LAMBDA_ACCESS_KEY }}
         run: |
           curl \
-          -u "$SAUCE_USERNAME:$SAUCE_ACCESS_KEY" \
-          -X POST 'https://api.us-west-1.saucelabs.com/v1/storage/upload' \
-          --form "payload=@export/AriesBifold.ipa" \
+          -u "$LAMBDA_USERNAME:$LAMBDA_ACCESS_KEY" \
+          --location --request POST 'https://manual-api.lambdatest.com/app/upload/realDevice' \
+          --form 'appFile=@"export/AriesBifold.ipa"' \
           --form "name=AriesBifold-$GITHUB_RUN_NUMBER.ipa" \
-          --form "description=iOS QC Wallet app"
 
   build-android:
     # if: ${{ false }}  # disable for now
@@ -354,19 +353,18 @@ jobs:
           echo "${GOOGLE_API_CREDENTIALS_BASE64}" | base64 -d >${GOOGLE_API_CREDENTIALS} && \
           node ./deploy-to-playstore.js
 
-      - name: Ship to SauceLabs
+      - name: Ship to LambdaTest
         if: github.ref_name == 'main' && needs.check-android-secrets.outputs.isReleaseBuild == 'true'
         working-directory: app/android
         env:
-          SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
-          SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
+          LAMBDA_USERNAME: ${{ secrets.LAMBDA_USERNAME }}
+          LAMBDA_ACCESS_KEY: ${{ secrets.LAMBDA_ACCESS_KEY }}
         run: |
           curl \
-          -u "$SAUCE_USERNAME:$SAUCE_ACCESS_KEY" \
-          -X POST 'https://api.us-west-1.saucelabs.com/v1/storage/upload' \
-          --form "payload=@app/build/outputs/bundle/release/app-release.aab" \
+          -u "$LAMBDA_USERNAME:$LAMBDA_ACCESS_KEY" \
+          --location --request POST 'https://manual-api.lambdatest.com/app/upload/realDevice' \
+          --form 'appFile=@"app/build/outputs/bundle/release/app-release.aab"' \
           --form "name=AriesBifold-$GITHUB_RUN_NUMBER.aab" \
-          --form "description=Android Bifold BC wallet app"
 
   run-on-device-tests:
     if: github.ref_name == 'main' && needs.check-android-secrets.outputs.isReleaseBuild == 'true'&& needs.check-ios-secrets.outputs.isReleaseBuild == 'true'
@@ -399,33 +397,33 @@ jobs:
         with:
           USE_NGROK: "-n"
 
-      - name: run-sauce-connect-tunnel
+      - name: run-lambdatest-connect-tunnel
         if: ${{ matrix.mobile-platform=='-p iOS' }}
-        uses: saucelabs/sauce-connect-action@v2
+        uses: LambdaTest/LambdaTest-tunnel-action@v1
         with:
-          username: ${{ secrets.SAUCE_USERNAME }}
-          accessKey: ${{ secrets.SAUCE_ACCESS_KEY }}
-          directDomains: aries-mediator-agent-test.apps.silver.devops.gov.bc.ca
+          user: ${{ secrets.LAMBDA_USERNAME }}
+          accessKey: ${{ secrets.LAMBDA_ACCESS_KEY }}
+          tunnelName: "PortefeuilleQC-Tunnel-${{ github.run_number }}"
 
       - name: Fetch mobile test harness repo
         uses: actions/checkout@v2
         with:
-          repository: hyperledger/aries-mobile-test-harness
+          repository: MCN-ING/aries-mobile-test-harness
           path: aries-mobile-test-harness
           ref: main
 
-      - name: Run SauceLabs smoke-test
+      - name: Run LambdaTest smoke-test
         uses: ./.github/workflows/actions/run-test-harness
         env:
           LEDGER_URL_CONFIG: "http://test.bcovrin.vonx.io"
           REGION: "us-west-1"
         with:
-          MOBILE_WALLET: "-w bc_wallet"
+          MOBILE_WALLET: "-w bifold"
           ISSUER_AGENT: '-i "AATH;http://0.0.0.0:9020"'
           VERIFIER_AGENT: '-v "AATH;http://0.0.0.0:9030"'
-          DEVICE_CLOUD: "-d SauceLabs"
-          DEVICE_CLOUD_USER: "-u ${{ secrets.SAUCE_USERNAME }}"
-          DEVICE_CLOUD_KEY: "-k ${{ secrets.SAUCE_ACCESS_KEY }}"
+          DEVICE_CLOUD: "-d LambdaTest"
+          DEVICE_CLOUD_USER: "-u ${{ secrets.LAMBDA_USERNAME }}"
+          DEVICE_CLOUD_KEY: "-k ${{ secrets.LAMBDA_ACCESS_KEY }}"
           MOBILE_PLATFORM: ${{ matrix.mobile-platform }}
           APP_FILE_NAME: ${{ matrix.app-file-name }}
           TEST_SCOPE: "-t @bc_wallet -t @SmokeTest"
