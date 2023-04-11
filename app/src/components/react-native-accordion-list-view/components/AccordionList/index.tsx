@@ -17,7 +17,7 @@ const AccordionList = ({
   ...props
 }: AccordionListProps) => {
   const [currentlyOpen, setCurrentlyOpen] = useState<any>(null)
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item, index }: { item: any, index: number }) => (
     <AccordionItem
       containerStyle={containerItemStyle}
       customTitle={() => customTitle(item)}
@@ -31,7 +31,7 @@ const AccordionList = ({
           setCurrentlyOpen(item)
         }
       }}
-      testID={testIdWithKey('AccordionItem')}
+      testID={testIdWithKey('AccordionItem'+index)}
     />
   )
   return <FlatList data={data} renderItem={renderItem} keyExtractor={(item, index) => index.toString()} {...props} />
