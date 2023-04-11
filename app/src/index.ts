@@ -24,7 +24,6 @@ import Developer from './screens/Developer'
 import { pages } from './screens/OnboardingPages'
 import PersonCredentialScreen from './screens/PersonCredential'
 import Splash from './screens/Splash'
-import Terms from './screens/Terms'
 import { BCDispatchAction } from './store'
 import { defaultTheme as theme } from './theme'
 
