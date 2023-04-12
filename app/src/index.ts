@@ -9,8 +9,6 @@ import {
 import merge from 'lodash.merge'
 import { ReducerAction } from 'react'
 
-import UseBiometry from '../../bifold/core/App/screens/UseBiometry'
-
 import bundle from './assets/branding/QC-credential-branding'
 import AddCredentialButton from './components/AddCredentialButton'
 import AddCredentialSlider from './components/AddCredentialSlider'
@@ -39,7 +37,6 @@ const configuration: ConfigurationContext = {
   pages,
   splash: Splash,
   terms: TermsStack,
-  useBiometry: UseBiometry,
   credentialListHeaderRight: AddCredentialButton,
   credentialListOptions: AddCredentialSlider,
   credentialEmptyList: EmptyList,
