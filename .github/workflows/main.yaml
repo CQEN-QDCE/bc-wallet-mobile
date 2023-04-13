@@ -380,10 +380,10 @@ jobs:
       matrix:
         include:
           - mobile-platform: "-p Android"
-            app-file-name: "-a BCWallet-${{ github.run_number }}.aab"
+            app-file-name: "-a QCWallet-${{ github.run_number }}.aab"
             report-project: "android-one-device-smoke"
           - mobile-platform: "-p iOS"
-            app-file-name: "-a BCWallet-${{ github.run_number }}.ipa"
+            app-file-name: "-a QCWallet-${{ github.run_number }}.ipa"
             report-project: "ios-one-device-smoke"
     timeout-minutes: 60
     steps:
@@ -430,7 +430,7 @@ jobs:
           DEVICE_CLOUD_KEY: "-k ${{ secrets.LAMBDA_ACCESS_KEY }}"
           MOBILE_PLATFORM: ${{ matrix.mobile-platform }}
           APP_FILE_NAME: ${{ matrix.app-file-name }}
-          TEST_SCOPE: "-t @bc_wallet -t @SmokeTest"
+          TEST_SCOPE: "-t @qc_wallet -t @SmokeTest"
           REPORT_PROJECT: ${{ matrix.report-project }}
 
       - name: Upload smoke-test results to Allure
