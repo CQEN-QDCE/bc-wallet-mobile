@@ -366,6 +366,18 @@ jobs:
           --form 'appFile=@"app/build/outputs/bundle/release/app-release.aab"' \
           --form "name=AriesBifold-$GITHUB_RUN_NUMBER.aab" \
 
+  add-version-tag:
+    # change != to ==  (only for test)
+    if: github.ref_name != 'main' && needs.check-android-secrets.outputs.isReleaseBuild == 'true'&& needs.check-ios-secrets.outputs.isReleaseBuild == 'true'
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-22.04
+    - script: |
+        git config --global user.email "pipeline[bot]@pipeline.com"
+        git config --global user.name "pipeline[bot]"
+        git tag -a v${{ env.appBuildVersion }}-${{ env.appBuildNumber }} -m "Version ${{ env.appBuildVersion }}-${{ env.appBuildNumber }}"
+        git push --tags
+
+
   run-on-device-tests:
     if: github.ref_name == 'main' && needs.check-android-secrets.outputs.isReleaseBuild == 'true'&& needs.check-ios-secrets.outputs.isReleaseBuild == 'true'
     needs: [build-ios, build-android]
