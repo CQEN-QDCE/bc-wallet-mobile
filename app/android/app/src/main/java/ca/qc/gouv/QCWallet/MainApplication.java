@@ -1,4 +1,4 @@
-package ca.bc.gouv.QCWallet;
+package ca.qc.gouv.portefeuilleqc;
 
 import android.app.Application;
 import android.content.Context;
@@ -47,3 +47,4 @@ public class MainApplication extends Application implements ReactApplication {
     SoLoader.init(this, /* native exopackage */ false);
   }
 }
+
