@@ -119,7 +119,7 @@ const AddCredentialSlider: React.FC = () => {
             <TouchableOpacity onPress={deactivateSlider}>
               <Icon name="window-close" size={35} style={styles.drawerRowItem}></Icon>
             </TouchableOpacity>
-            <Text style={styles.drawerTitleText}>Choose</Text>
+            <Text style={styles.drawerTitleText}>{t('CredentialDetails.Choose')}</Text>
             {showGetFoundationCredential && (
               <TouchableOpacity style={styles.drawerRow} disabled={workflowInFlight} onPress={onBCIDPress}>
                 {workflowInFlight ? (
@@ -128,12 +128,12 @@ const AddCredentialSlider: React.FC = () => {
                   <Icon name="credit-card" size={30} style={styles.drawerRowItem}></Icon>
                 )}
 
-                <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>Get your Person credential</Text>
+                <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.GetPersonCred')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.drawerRow} onPress={goToScanScreen}>
               <Icon name="qrcode" size={30} style={styles.drawerRowItem}></Icon>
-              <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>Scan a QR code</Text>
+              <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.ScanQrCode')}</Text>
             </TouchableOpacity>
           </View>
         </View>
