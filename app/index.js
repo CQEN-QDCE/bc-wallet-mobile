@@ -20,28 +20,28 @@ import '@formatjs/intl-datetimeformat/polyfill'
 import '@formatjs/intl-datetimeformat/locale-data/en' // locale-data for en
 import '@formatjs/intl-datetimeformat/add-all-tz' // Add ALL tz data
 
+import BugsnagPluginReactNavigation from '@bugsnag/plugin-react-navigation'
+import Bugsnag from '@bugsnag/react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import React from 'react'
-import { AppRegistry } from 'react-native'
+import { AppRegistry, View, Text } from 'react-native'
 
 import App from './App'
 import { name as appName } from './app.json'
-import bcwallet from './src/'
-import Bugsnag from "@bugsnag/react-native"
-import BugsnagPluginReactNavigation from '@bugsnag/plugin-react-navigation'
-
+import qcwallet from './src/'
 
 Bugsnag.start({
-  plugins: [new BugsnagPluginReactNavigation()]
+  plugins: [new BugsnagPluginReactNavigation()],
 })
 
 // Create the error boundary...
 const ErrorBoundary = Bugsnag.getPlugin('react').createErrorBoundary(React)
 
-const ErrorView = () =>
+const ErrorView = () => (
   <View>
     <Text>Inform users of an error in the component tree.</Text>
   </View>
+)
 
 const { createNavigationContainer } = Bugsnag.getPlugin('reactNavigation')
 
@@ -49,7 +49,7 @@ const { createNavigationContainer } = Bugsnag.getPlugin('reactNavigation')
 // except now it tracks route information to send with your error reports
 const BugsnagNavigationContainer = createNavigationContainer(NavigationContainer)
 
-const { theme } = bcwallet
+const { theme } = qcwallet
 
 const { ColorPallet } = theme
 
@@ -74,5 +74,4 @@ const Base = () => {
     </BugsnagNavigationContainer>
   )
 }
-
 AppRegistry.registerComponent(appName, () => Base)
