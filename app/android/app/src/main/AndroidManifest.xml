@@ -42,6 +42,6 @@
         <data android:scheme="bcwallet"/>
       </intent-filter>
     </activity>
-    <meta-data android:name="com.bugsnag.android.API_KEY" android:value="454bd13ab8e16946a93f967f1eed6275" />
+    <meta-data android:name="com.bugsnag.android.API_KEY" android:value="45d47f8c332138ec3f17151020797dea" />
   </application>
 </manifest>
