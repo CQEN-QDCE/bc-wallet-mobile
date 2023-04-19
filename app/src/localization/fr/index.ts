@@ -416,7 +416,7 @@ const translation = {
   Tips: {
     Header: 'Conseils',
     GettingReady: 'Préparez votre portefeuille...',
-    Tip1: "Pour plus de sécurité, verrouillez l'application Portefeuille QC aprés 5 minutes d'inactivité",
+    Tip1: "Pour plus de sécurité, verrouillez l'application Portefeuille QC aprés 5 minutes d'inactivité.",
     Tip2: "Contrairement à la présentation de cartes physiques, vous ne partagez que ce qui est nécessaire à partir de vos justificatifs",
     Tip3: "Vos justificatifs sont stockés uniquement sur ce téléphone, nulle part ailleurs",
     Tip4: 'Les informations sont envoyées et reçues via une connexion cryptée intraçable',
