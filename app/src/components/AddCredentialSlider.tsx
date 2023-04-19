@@ -1,27 +1,43 @@
 import { CredentialMetadataKeys, CredentialState } from '@aries-framework/core'
-import { useCredentialByState } from '@aries-framework/react-hooks'
+import { useAgent, useCredentialByState } from '@aries-framework/react-hooks'
 import { useNavigation } from '@react-navigation/core'
-import { useTheme, Screens, Stacks } from 'aries-bifold'
+import { useTheme, useStore, Screens, Stacks } from 'aries-bifold'
 import React, { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DeviceEventEmitter, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
-import { useTranslation } from 'react-i18next'
 
 import { BCWalletEventTypes } from '../events/eventTypes'
-import { showBCIDSelector } from '../helpers/BCIDHelper'
+import { showBCIDSelector, startFlow } from '../helpers/BCIDHelper'
+import { BCState } from '../store'
+
+import LoadingIcon from './LoadingIcon'
 
 const AddCredentialSlider: React.FC = () => {
   const { ColorPallet, TextTheme } = useTheme()
-  const navigation = useNavigation()
+  const { agent } = useAgent()
   const { t } = useTranslation()
-
-  const [addCredentialPressed, setAddCredentialPressed] = useState<boolean>(false)
+  const [store] = useStore<BCState>()
   const [showGetFoundationCredential, setShowGetFoundationCredential] = useState<boolean>(false)
-
+  const [addCredentialPressed, setAddCredentialPressed] = useState<boolean>(false)
+  const [workflowInFlight, setWorkflowInFlight] = useState<boolean>(false)
   const credentials = [
     ...useCredentialByState(CredentialState.CredentialReceived),
     ...useCredentialByState(CredentialState.Done),
   ]
+  const navigation = useNavigation()
+  const [canUseLSBCredential] = useState<boolean>(true)
+
+  useEffect(() => {
+    const handle = DeviceEventEmitter.addListener(BCWalletEventTypes.ADD_CREDENTIAL_PRESSED, (value?: boolean) => {
+      const newVal = value === undefined ? !addCredentialPressed : value
+      setAddCredentialPressed(newVal)
+    })
+
+    return () => {
+      handle.remove()
+    }
+  }, [])
 
   const styles = StyleSheet.create({
     centeredView: {
@@ -69,38 +85,33 @@ const AddCredentialSlider: React.FC = () => {
     DeviceEventEmitter.emit(BCWalletEventTypes.ADD_CREDENTIAL_PRESSED, false)
   }, [])
 
+  const navigateToHomeScreen = () => {
+    deactivateSlider()
+    // TODO(jl): Replace hard coded string with import from Bifold.
+    // Waiting on PR #644 to be merged.
+    navigation.getParent()?.navigate('Tab Home Stack')
+  }
+
   const goToScanScreen = useCallback(() => {
     deactivateSlider()
     navigation.getParent()?.navigate(Stacks.ConnectStack, { screen: Screens.Scan })
   }, [])
 
-  const goToPersonCredentialScreen = useCallback(() => {
-    deactivateSlider()
-    navigation.getParent()?.navigate(Stacks.NotificationStack, {
-      screen: Screens.CustomNotification,
-    })
-  }, [])
+  const onBCIDPress = useCallback(() => {
+    setWorkflowInFlight(true)
+    startFlow(agent!, store, setWorkflowInFlight, t, navigateToHomeScreen)
+  }, [store])
 
   useEffect(() => {
     const credentialDefinitionIDs = credentials.map(
       (c) => c.metadata.data[CredentialMetadataKeys.IndyCredential].credentialDefinitionId as string
     )
 
-    setShowGetFoundationCredential(showBCIDSelector(credentialDefinitionIDs, true))
-  }, [credentials])
-
-  useEffect(() => {
-    const handle = DeviceEventEmitter.addListener(BCWalletEventTypes.ADD_CREDENTIAL_PRESSED, (value?: boolean) => {
-      const newVal = value === undefined ? !addCredentialPressed : value
-      setAddCredentialPressed(newVal)
-    })
-
-    return () => {
-      handle.remove()
-    }
-  }, [])
+    setShowGetFoundationCredential(showBCIDSelector(credentialDefinitionIDs, canUseLSBCredential))
+  }, [credentials, canUseLSBCredential])
 
   return (
+    <View>
     <Modal animationType="slide" transparent={true} visible={addCredentialPressed} onRequestClose={deactivateSlider}>
       <TouchableOpacity style={styles.outsideListener} onPress={deactivateSlider} />
       <View style={styles.centeredView}>
@@ -110,8 +121,12 @@ const AddCredentialSlider: React.FC = () => {
           </TouchableOpacity>
           <Text style={styles.drawerTitleText}>{t('CredentialDetails.Choose')}</Text>
           {showGetFoundationCredential && (
-            <TouchableOpacity style={styles.drawerRow} onPress={goToPersonCredentialScreen}>
+            <TouchableOpacity style={styles.drawerRow} disabled={workflowInFlight} onPress={onBCIDPress}>
+              {workflowInFlight ? (
+                <LoadingIcon size={30} color={styles.drawerRowItem.color} active={workflowInFlight} />
+                ) : (
               <Icon name="credit-card" size={30} style={styles.drawerRowItem}></Icon>
+              )}
               <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.GetPersonCred')}</Text>
             </TouchableOpacity>
           )}
@@ -122,6 +137,7 @@ const AddCredentialSlider: React.FC = () => {
         </View>
       </View>
     </Modal>
+    </View>
   )
 }
 
