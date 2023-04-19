@@ -127,6 +127,7 @@ const AddCredentialSlider: React.FC = () => {
                 ) : (
                   <Icon name="credit-card" size={30} style={styles.drawerRowItem}></Icon>
                 )}
+                
                 <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.GetPersonCred')}</Text>
               </TouchableOpacity>
             )}
