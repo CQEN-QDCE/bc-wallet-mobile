@@ -112,31 +112,31 @@ const AddCredentialSlider: React.FC = () => {
 
   return (
     <View>
-    <Modal animationType="slide" transparent={true} visible={addCredentialPressed} onRequestClose={deactivateSlider}>
-      <TouchableOpacity style={styles.outsideListener} onPress={deactivateSlider} />
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
-          <TouchableOpacity onPress={deactivateSlider}>
-            <Icon name="window-close" size={35} style={styles.drawerRowItem}></Icon>
-          </TouchableOpacity>
-          <Text style={styles.drawerTitleText}>{t('CredentialDetails.Choose')}</Text>
-          {showGetFoundationCredential && (
-            <TouchableOpacity style={styles.drawerRow} disabled={workflowInFlight} onPress={onBCIDPress}>
-              {workflowInFlight ? (
-                <LoadingIcon size={30} color={styles.drawerRowItem.color} active={workflowInFlight} />
-                ) : (
-              <Icon name="credit-card" size={30} style={styles.drawerRowItem}></Icon>
-              )}
-              <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.GetPersonCred')}</Text>
+      <Modal animationType="slide" transparent={true} visible={addCredentialPressed} onRequestClose={deactivateSlider}>
+        <TouchableOpacity style={styles.outsideListener} onPress={deactivateSlider} />
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity onPress={deactivateSlider}>
+              <Icon name="window-close" size={35} style={styles.drawerRowItem}></Icon>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.drawerRow} onPress={goToScanScreen}>
-            <Icon name="qrcode" size={30} style={styles.drawerRowItem}></Icon>
-            <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.ScanQrCode')}</Text>
-          </TouchableOpacity>
+            <Text style={styles.drawerTitleText}>{t('CredentialDetails.Choose')}</Text>
+            {showGetFoundationCredential && (
+              <TouchableOpacity style={styles.drawerRow} disabled={workflowInFlight} onPress={onBCIDPress}>
+                {workflowInFlight ? (
+                  <LoadingIcon size={30} color={styles.drawerRowItem.color} active={workflowInFlight} />
+                ) : (
+                  <Icon name="credit-card" size={30} style={styles.drawerRowItem}></Icon>
+                )}
+                <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.GetPersonCred')}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.drawerRow} onPress={goToScanScreen}>
+              <Icon name="qrcode" size={30} style={styles.drawerRowItem}></Icon>
+              <Text style={{ ...styles.drawerRowItem, marginLeft: 5 }}>{t('CredentialDetails.ScanQrCode')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
     </View>
   )
 }
