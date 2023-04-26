@@ -4,7 +4,7 @@ import React from 'react'
 import { TFunction } from 'react-i18next'
 import { Linking, Platform, DeviceEventEmitter } from 'react-native'
 import { InAppBrowser, RedirectResult } from 'react-native-inappbrowser-reborn'
-
+import Bugsnag from '@bugsnag/react-native'
 import { BCState } from '../store'
 
 const legacyDidKey = '_internal/legacyDid' // TODO:(jl) Waiting for AFJ export of this.
@@ -81,6 +81,7 @@ export const removeExistingInvitationIfRequired = async (
       await agent?.oob.deleteById(oobRecord.id)
     }
   } catch (error) {
+    Bugsnag.notify(error as Error)
     // findByInvitationId with throw if unsuccessful but that's not a problem.
     // It just means there is nothing to delete.
   }
@@ -96,7 +97,9 @@ export const recieveBCIDInvite = async (
   const invite = await agent.oob.parseInvitation(store.developer.environment.iasAgentInviteUrl)
 
   if (!invite) {
+    Bugsnag.notify(new BifoldError(t('Error.Title2020'), t('Error.Message2020'), t('Error.NoMessage'), ErrorCodes.BadInvitation))
     throw new BifoldError(t('Error.Title2020'), t('Error.Message2020'), t('Error.NoMessage'), ErrorCodes.BadInvitation)
+    
   }
 
   await removeExistingInvitationIfRequired(agent, invite.id)
@@ -104,6 +107,7 @@ export const recieveBCIDInvite = async (
   const record = await agent.oob.receiveInvitation(invite)
 
   if (!record) {
+    Bugsnag.notify(new BifoldError(t('Error.Title2021'), t('Error.Message2021'), t('Error.NoMessage'), ErrorCodes.ReceiveInvitationError))
     throw new BifoldError(
       t('Error.Title2021'),
       t('Error.Message2021'),
@@ -118,6 +122,7 @@ export const recieveBCIDInvite = async (
   const didRepository = agent.dependencyManager.resolve(DidRepository)
 
   if (!didRepository) {
+    Bugsnag.notify(new BifoldError(t('Error.Title2022'), t('Error.Message2022'), t('Error.NoMessage'), ErrorCodes.CannotGetLegacyDID))
     throw new BifoldError(
       t('Error.Title2022'),
       t('Error.Message2022'),
@@ -130,6 +135,7 @@ export const recieveBCIDInvite = async (
   const didRecord = dids.filter((d) => d.did === record.connectionRecord?.did).pop()
 
   if (!didRecord) {
+    Bugsnag.notify(new BifoldError(t('Error.Title2022'), t('Error.Message2022'), t('Error.NoMessage'), ErrorCodes.CannotGetLegacyDID))
     throw new BifoldError(
       t('Error.Title2022'),
       t('Error.Message2022'),
@@ -142,6 +148,7 @@ export const recieveBCIDInvite = async (
   const legacyConnectionDid = didRecord.metadata.get(legacyDidKey)!.unqualifiedDid
 
   if (typeof legacyConnectionDid !== 'string' || legacyConnectionDid.length <= 0) {
+    Bugsnag.notify(new BifoldError(t('Error.Title2022'), t('Error.Message2022'), t('Error.NoMessage'), ErrorCodes.CannotGetLegacyDID))
     throw new BifoldError(
       t('Error.Title2022'),
       t('Error.Message2022'),
@@ -238,6 +245,7 @@ export const authenticateWithServiceCard = async (
       code === ErrorCodes.CanceledByUser ? AuthenticationResultType.Cancel : AuthenticationResultType.Fail
     )
     DeviceEventEmitter.emit(BifoldEventTypes.ERROR_ADDED, error)
+    Bugsnag.notify(error as Error)
   }
 }
 
@@ -259,5 +267,6 @@ export const startFlow = async (
   } catch (error: unknown) {
     setWorkflowInProgress(false)
     DeviceEventEmitter.emit(BifoldEventTypes.ERROR_ADDED, error)
+    Bugsnag.notify(error as Error)
   }
 }
