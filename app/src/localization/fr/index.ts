@@ -422,6 +422,7 @@ const translation = {
     Tip14: "Même les justificatifs révoqués ou expirés peuvent être utilisables si l'organisation ne le demande pas",
   },
   Init: {
+    Retry: 'Réessayer',
     Starting: 'Débuter...',
     CheckingAuth: 'Vérification de l’authentification...',
     FetchingPreferences: 'Récupération des préférences...',
