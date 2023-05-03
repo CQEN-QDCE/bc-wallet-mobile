@@ -84,7 +84,7 @@
 	<key>bugsnag</key>
 	<dict>
 		<key>apiKey</key>
-		<string>45d47f8c332138ec3f17151020797dea</string>
+		<string>$(BUGSNAG_API_KEY)</string>
 	</dict>
 </dict>
 </plist>
