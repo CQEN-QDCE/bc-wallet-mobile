@@ -38,6 +38,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import ProgressBar from '../components/ProgressBar'
 import TipCarousel from '../components/TipCarousel'
 import { BCDispatchAction, BCLocalStorageKeys } from '../store'
+import Bugsnag from '@bugsnag/react-native'
 
 enum InitErrorTypes {
   Onboarding,
@@ -274,6 +275,7 @@ const Splash: React.FC = () => {
       } catch (e: unknown) {
         setInitErrorType(InitErrorTypes.Onboarding)
         setInitError(e as Error)
+        Bugsnag.notify(e as Error)
       }
     }
     initOnboarding()
@@ -337,6 +339,7 @@ const Splash: React.FC = () => {
       } catch (e: unknown) {
         setInitErrorType(InitErrorTypes.Agent)
         setInitError(e as Error)
+        Bugsnag.notify(e as Error)
       }
     }
 

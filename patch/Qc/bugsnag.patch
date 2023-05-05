@@ -1,0 +1,2302 @@
+diff --git a/app/android/app/build.gradle b/app/android/app/build.gradle
+index fcccbb4..5036660 100644
+--- a/app/android/app/build.gradle
++++ b/app/android/app/build.gradle
+@@ -93,6 +93,7 @@ project.ext.react = [
+ ]
+ 
+ apply from: "../../node_modules/react-native/react.gradle"
++apply plugin: "com.bugsnag.android.gradle"
+ apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+ 
+ /**
+@@ -239,3 +240,7 @@ task copyDownloadableDepsToLibs(type: Copy) {
+ 
+ apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+ apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
++
++bugsnag {
++  uploadReactNativeMappings = true
++}
+diff --git a/app/android/app/src/main/AndroidManifest.xml b/app/android/app/src/main/AndroidManifest.xml
+index 289b56d..86dcbc9 100644
+--- a/app/android/app/src/main/AndroidManifest.xml
++++ b/app/android/app/src/main/AndroidManifest.xml
+@@ -42,5 +42,6 @@
+         <data android:scheme="qcwallet"/>
+       </intent-filter>
+     </activity>
++    <meta-data android:name="com.bugsnag.android.API_KEY" android:value="45d47f8c332138ec3f17151020797dea" />
+   </application>
+ </manifest>
+\ No newline at end of file
+diff --git a/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java b/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java
+index 235e7e0..dc77d51 100644
+--- a/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java
++++ b/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java
+@@ -1,5 +1,6 @@
+ package ca.qc.gouv.portefeuilleqc;
+ 
++import com.bugsnag.android.Bugsnag;
+ import android.app.Application;
+ import android.content.Context;
+ import com.facebook.react.PackageList;
+@@ -44,6 +45,7 @@ public class MainApplication extends Application implements ReactApplication {
+   @Override
+   public void onCreate() {
+     super.onCreate();
++    Bugsnag.start(this);
+     SoLoader.init(this, /* native exopackage */ false);
+   }
+ }
+diff --git a/app/android/build.gradle b/app/android/build.gradle
+index 0e1bbc0..b2f43ad 100644
+--- a/app/android/build.gradle
++++ b/app/android/build.gradle
+@@ -18,6 +18,7 @@ buildscript {
+     }
+     dependencies {
+         classpath("com.android.tools.build:gradle:7.2.1")
++        classpath("com.bugsnag:bugsnag-android-gradle-plugin:7.+")
+         // NOTE: Do not place your application dependencies here; they belong
+         // in the individual module build.gradle files
+     }
+diff --git a/app/index.js b/app/index.js
+index 862d989..ffa7275 100644
+--- a/app/index.js
++++ b/app/index.js
+@@ -19,7 +19,8 @@ import '@formatjs/intl-relativetimeformat/locale-data/en' // locale-data for en
+ import '@formatjs/intl-datetimeformat/polyfill'
+ import '@formatjs/intl-datetimeformat/locale-data/en' // locale-data for en
+ import '@formatjs/intl-datetimeformat/add-all-tz' // Add ALL tz data
+-
++import BugsnagPluginReactNavigation from '@bugsnag/plugin-react-navigation'
++import Bugsnag from '@bugsnag/react-native'
+ import { NavigationContainer } from '@react-navigation/native'
+ import React from 'react'
+ import { AppRegistry } from 'react-native'
+@@ -27,6 +28,27 @@ import { AppRegistry } from 'react-native'
+ import App from './App'
+ import { name as appName } from './app.json'
+ import qcwallet from './src/'
++
++
++Bugsnag.start({
++  plugins: [new BugsnagPluginReactNavigation()],
++})
++
++// Create the error boundary...
++const ErrorBoundary = Bugsnag.getPlugin('react').createErrorBoundary(React)
++
++const ErrorView = () => (
++  <View>
++    <Text>Inform users of an error in the component tree.</Text>
++  </View>
++)
++
++const { createNavigationContainer } = Bugsnag.getPlugin('reactNavigation')
++
++// The returned BugsnagNavigationContainer has exactly the same usage
++// except now it tracks route information to send with your error reports
++const BugsnagNavigationContainer = createNavigationContainer(NavigationContainer)
++
+ const { theme } = qcwallet
+ 
+ const { ColorPallet } = theme
+@@ -45,9 +67,11 @@ const navigationTheme = {
+ 
+ const Base = () => {
+   return (
+-    <NavigationContainer theme={navigationTheme}>
+-      <App />
+-    </NavigationContainer>
++    <BugsnagNavigationContainer theme={navigationTheme}>
++      <ErrorBoundary FallbackComponent={ErrorView}>
++        <App />
++      </ErrorBoundary>
++    </BugsnagNavigationContainer>
+   )
+ }
+ AppRegistry.registerComponent(appName, () => Base)
+diff --git a/app/ios/AriesBifold.xcodeproj/project.pbxproj b/app/ios/AriesBifold.xcodeproj/project.pbxproj
+index 30bf597..6ec7ceb 100644
+--- a/app/ios/AriesBifold.xcodeproj/project.pbxproj
++++ b/app/ios/AriesBifold.xcodeproj/project.pbxproj
+@@ -237,6 +237,7 @@
+ 				F5B7D67D9BBF4C5FE692BB29 /* [CP] Embed Pods Frameworks */,
+ 				EB396EB204E0E4C9F6307F29 /* [CP] Copy Pods Resources */,
+ 				433E774026557E1B00F569EE /* Embed Frameworks */,
++				363F8BD60E724D3C8A2DCE88 /* Upload source maps to Bugsnag */,
+ 			);
+ 			buildRules = (
+ 			);
+@@ -323,7 +324,7 @@
+ 			);
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 			shellPath = /bin/sh;
+-			shellScript = "set -e\n\nexport NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
++			shellScript = "export EXTRA_PACKAGER_ARGS=\"--sourcemap-output $TMPDIR/$(md5 -qs \"$CONFIGURATION_BUILD_DIR\")-main.jsbundle.map\"\nset -e\n\nexport NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
+ 		};
+ 		4EC0E8613979411464217753 /* [CP] Check Pods Manifest.lock */ = {
+ 			isa = PBXShellScriptBuildPhase;
+@@ -456,6 +457,20 @@
+ 			shellScript = "export RCT_METRO_PORT=\"${RCT_METRO_PORT:=8081}\"\necho \"export RCT_METRO_PORT=${RCT_METRO_PORT}\" > \"${SRCROOT}/../node_modules/react-native/scripts/.packager.env\"\nif [ -z \"${RCT_NO_LAUNCH_PACKAGER+xxx}\" ] ; then\n  if nc -w 5 -z localhost ${RCT_METRO_PORT} ; then\n    if ! curl -s \"http://localhost:${RCT_METRO_PORT}/status\" | grep -q \"packager-status:running\" ; then\n      echo \"Port ${RCT_METRO_PORT} already in use, packager is either not running or not running correctly\"\n      exit 2\n    fi\n  else\n    open \"$SRCROOT/../node_modules/react-native/scripts/launchPackager.command\" || echo \"Can't start packager automatically\"\n  fi\nfi\n";
+ 			showEnvVarsInLog = 0;
+ 		};
++		363F8BD60E724D3C8A2DCE88 /* Upload source maps to Bugsnag */ = {
++			isa = PBXShellScriptBuildPhase;
++			buildActionMask = 2147483647;
++			files = (
++			);
++			runOnlyForDeploymentPostprocessing = 0;
++			name = "Upload source maps to Bugsnag";
++			inputPaths = (
++			);
++			outputPaths = (
++			);
++			shellPath = /bin/sh;
++			shellScript = "SOURCE_MAP=\"$TMPDIR/$(md5 -qs \"$CONFIGURATION_BUILD_DIR\")-main.jsbundle.map\" ../node_modules/@bugsnag/react-native/bugsnag-react-native-xcode.sh";
++		};
+ /* End PBXShellScriptBuildPhase section */
+ 
+ /* Begin PBXSourcesBuildPhase section */
+diff --git a/app/ios/AriesBifold/AppDelegate.m b/app/ios/AriesBifold/AppDelegate.m
+index b39a42a..cebe040 100644
+--- a/app/ios/AriesBifold/AppDelegate.m
++++ b/app/ios/AriesBifold/AppDelegate.m
+@@ -1,3 +1,4 @@
++#import <Bugsnag/Bugsnag.h>
+ #import "AppDelegate.h"
+ 
+ #import <React/RCTBridge.h>
+@@ -10,7 +11,9 @@
+ - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+ {
+ 
+-  RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
++    [Bugsnag start];
++
++RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
+   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
+                                                    moduleName:@"QCWallet"
+                                             initialProperties:nil];
+diff --git a/app/ios/AriesBifold/Info.plist b/app/ios/AriesBifold/Info.plist
+index f3b7f9e..fbb39ab 100644
+--- a/app/ios/AriesBifold/Info.plist
++++ b/app/ios/AriesBifold/Info.plist
+@@ -1,85 +1,90 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
++<dict>
++	<key>NSFaceIDUsageDescription</key>
++	<string>$(PRODUCT_NAME) wants to use your FaceID/TouchID to authenticate your identity</string>
++	<key>CFBundleDevelopmentRegion</key>
++	<string>en</string>
++	<key>CFBundleDisplayName</key>
++	<string>Portefeuille QC</string>
++	<key>CFBundleExecutable</key>
++	<string>$(EXECUTABLE_NAME)</string>
++	<key>CFBundleIdentifier</key>
++	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
++	<key>CFBundleInfoDictionaryVersion</key>
++	<string>6.0</string>
++	<key>CFBundleName</key>
++	<string>$(PRODUCT_NAME)</string>
++	<key>CFBundlePackageType</key>
++	<string>APPL</string>
++	<key>CFBundleShortVersionString</key>
++	<string>$(MARKETING_VERSION)</string>
++	<key>CFBundleSignature</key>
++	<string>????</string>
++	<key>CFBundleVersion</key>
++	<string>$(CURRENT_PROJECT_VERSION)</string>
++	<key>ITSAppUsesNonExemptEncryption</key>
++	<false/>
++	<key>LSRequiresIPhoneOS</key>
++	<true/>
++	<key>NSAppTransportSecurity</key>
+ 	<dict>
+-		<key>NSFaceIDUsageDescription</key>
+-		<string>$(PRODUCT_NAME) wants to use your FaceID/TouchID to authenticate your identity</string>
+-		<key>CFBundleDevelopmentRegion</key>
+-		<string>en</string>
+-		<key>CFBundleDisplayName</key>
+-		<string>Portefeuille QC</string>
+-		<key>CFBundleExecutable</key>
+-		<string>$(EXECUTABLE_NAME)</string>
+-		<key>CFBundleIdentifier</key>
+-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+-		<key>CFBundleInfoDictionaryVersion</key>
+-		<string>6.0</string>
+-		<key>CFBundleName</key>
+-		<string>$(PRODUCT_NAME)</string>
+-		<key>CFBundlePackageType</key>
+-		<string>APPL</string>
+-		<key>CFBundleShortVersionString</key>
+-		<string>$(MARKETING_VERSION)</string>
+-		<key>CFBundleSignature</key>
+-		<string>????</string>
+-		<key>CFBundleVersion</key>
+-		<string>$(CURRENT_PROJECT_VERSION)</string>
+-		<key>ITSAppUsesNonExemptEncryption</key>
+-		<false/>
+-		<key>LSRequiresIPhoneOS</key>
++		<key>NSAllowsArbitraryLoads</key>
+ 		<true/>
+-		<key>NSAppTransportSecurity</key>
++		<key>NSExceptionDomains</key>
+ 		<dict>
+-			<key>NSAllowsArbitraryLoads</key>
+-			<true/>
+-			<key>NSExceptionDomains</key>
++			<key>localhost</key>
+ 			<dict>
+-				<key>localhost</key>
+-				<dict>
+-					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+-					<true/>
+-				</dict>
++				<key>NSExceptionAllowsInsecureHTTPLoads</key>
++				<true/>
+ 			</dict>
+ 		</dict>
+-		<key>NSCameraUsageDescription</key>
+-		<string>Camera used for in-app QR Code scanning</string>
+-		<key>NSLocationWhenInUseUsageDescription</key>
+-		<string/>
+-		<key>UIAppFonts</key>
+-		<array>
+-			<string>MaterialIcons.ttf</string>
+-			<string>MaterialCommunityIcons.ttf</string>
+-			<string>BCSans-Bold.ttf</string>
+-			<string>BCSans-BoldItalic.ttf</string>
+-			<string>BCSans-Italic.ttf</string>
+-			<string>BCSans-Regular.ttf</string>
+-		</array>
+-		<key>UILaunchStoryboardName</key>
+-		<string>LaunchScreen</string>
+-		<key>UIRequiredDeviceCapabilities</key>
+-		<array>
+-			<string>armv7</string>
+-		</array>
+-		<key>UISupportedInterfaceOrientations</key>
+-		<array>
+-			<string>UIInterfaceOrientationPortrait</string>
+-		</array>
+-		<key>UIViewControllerBasedStatusBarAppearance</key>
+-		<false/>
+-		<key>CFBundleURLTypes</key>
+-		<array>
+-			<dict>
+-				<key>CFBundleURLSchemes</key>
+-				<array>
+-					<string>qcwallet</string>
+-				</array>
+-			</dict>
+-			<dict>
+-				<key>CFBundleURLSchemes</key>
+-				<array>
+-					<string>didcomm</string>
+-				</array>
+-			</dict>
+-		</array>
+ 	</dict>
++	<key>NSCameraUsageDescription</key>
++	<string>Camera used for in-app QR Code scanning</string>
++	<key>NSLocationWhenInUseUsageDescription</key>
++	<string/>
++	<key>UIAppFonts</key>
++	<array>
++		<string>MaterialIcons.ttf</string>
++		<string>MaterialCommunityIcons.ttf</string>
++		<string>BCSans-Bold.ttf</string>
++		<string>BCSans-BoldItalic.ttf</string>
++		<string>BCSans-Italic.ttf</string>
++		<string>BCSans-Regular.ttf</string>
++	</array>
++	<key>UILaunchStoryboardName</key>
++	<string>LaunchScreen</string>
++	<key>UIRequiredDeviceCapabilities</key>
++	<array>
++		<string>armv7</string>
++	</array>
++	<key>UISupportedInterfaceOrientations</key>
++	<array>
++		<string>UIInterfaceOrientationPortrait</string>
++	</array>
++	<key>UIViewControllerBasedStatusBarAppearance</key>
++	<false/>
++	<key>CFBundleURLTypes</key>
++	<array>
++		<dict>
++			<key>CFBundleURLSchemes</key>
++			<array>
++				<string>qcwallet</string>
++			</array>
++		</dict>
++		<dict>
++			<key>CFBundleURLSchemes</key>
++			<array>
++				<string>didcomm</string>
++			</array>
++		</dict>
++	</array>
++	<key>bugsnag</key>
++	<dict>
++		<key>apiKey</key>
++		<string>45d47f8c332138ec3f17151020797dea</string>
++	</dict>
++</dict>
+ </plist>
+diff --git a/app/ios/Podfile.lock b/app/ios/Podfile.lock
+index e995bdf..4719f9e 100644
+--- a/app/ios/Podfile.lock
++++ b/app/ios/Podfile.lock
+@@ -1,5 +1,7 @@
+ PODS:
+   - boost (1.76.0)
++  - BugsnagReactNative (7.19.0):
++    - React-Core
+   - CatCrypto (0.3.2)
+   - CocoaAsyncSocket (7.6.5)
+   - DoubleConversion (1.1.6)
+@@ -387,6 +389,7 @@ PODS:
+ 
+ DEPENDENCIES:
+   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
++  - "BugsnagReactNative (from `../node_modules/@bugsnag/react-native`)"
+   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
+   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
+   - FBReactNativeSpec (from `../node_modules/react-native/React/FBReactNativeSpec`)
+@@ -458,6 +461,8 @@ SPEC REPOS:
+ EXTERNAL SOURCES:
+   boost:
+     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
++  BugsnagReactNative:
++    :path: "../node_modules/@bugsnag/react-native"
+   DoubleConversion:
+     :podspec: "../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec"
+   FBLazyVector:
+@@ -571,6 +576,7 @@ EXTERNAL SOURCES:
+ 
+ SPEC CHECKSUMS:
+   boost: a7c83b31436843459a1961bfd74b96033dc77234
++  BugsnagReactNative: fa312f53a83ca21c0afdfeaec98a9c5eeb8fc4ed
+   CatCrypto: a477899b6be4954e75be4897e732da098cc0a5a8
+   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
+   DoubleConversion: 831926d9b8bf8166fd87886c4abab286c2422662
+@@ -634,4 +640,4 @@ SPEC CHECKSUMS:
+ 
+ PODFILE CHECKSUM: ac6fb920404abfaf943a3b94ff54624a7f9c89e8
+ 
+-COCOAPODS: 1.11.3
++COCOAPODS: 1.12.0
+diff --git a/app/package-lock.json b/app/package-lock.json
+index 307f351..fee6a58 100644
+--- a/app/package-lock.json
++++ b/app/package-lock.json
+@@ -13,6 +13,8 @@
+         "@aries-framework/core": "^0.3.3",
+         "@aries-framework/react-hooks": "^0.4.0",
+         "@aries-framework/react-native": "^0.3.2",
++        "@bugsnag/plugin-react-navigation": "^7.19.0",
++        "@bugsnag/react-native": "^7.19.0",
+         "@formatjs/intl-datetimeformat": "4.2.4",
+         "@formatjs/intl-displaynames": "5.2.4",
+         "@formatjs/intl-getcanonicallocales": "1.7.3",
+@@ -77,6 +79,7 @@
+       "devDependencies": {
+         "@babel/core": "7.15.5",
+         "@babel/runtime": "7.15.4",
++        "@bugsnag/source-maps": "^2.3.1",
+         "@commitlint/cli": "^11.0.0",
+         "@react-native-community/eslint-config": "^2.0.0",
+         "@storybook/addon-actions": "^5.3.21",
+@@ -392,7 +395,7 @@
+       },
+       "peerDependencies": {
+         "@aries-framework/core": "^0.3.3",
+-        "@aries-framework/react-hooks": "^0.4.0",
++        "@aries-framework/react-hooks": "^0.4.2",
+         "@aries-framework/react-native": "^0.3.2",
+         "@formatjs/intl-datetimeformat": "^4.2.3",
+         "@formatjs/intl-displaynames": "^5.2.3",
+@@ -2280,6 +2283,179 @@
+       "integrity": "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==",
+       "dev": true
+     },
++    "node_modules/@bugsnag/core": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/core/-/core-7.19.0.tgz",
++      "integrity": "sha512-2KGwdaLD9PhR7Wk7xPi3jGuGsKTatc/28U4TOZIDU3CgC2QhGjubwiXSECel5gwxhZ3jACKcMKSV2ovHhv1NrA==",
++      "dependencies": {
++        "@bugsnag/cuid": "^3.0.0",
++        "@bugsnag/safe-json-stringify": "^6.0.0",
++        "error-stack-parser": "^2.0.3",
++        "iserror": "0.0.2",
++        "stack-generator": "^2.0.3"
++      }
++    },
++    "node_modules/@bugsnag/cuid": {
++      "version": "3.0.2",
++      "resolved": "https://registry.npmjs.org/@bugsnag/cuid/-/cuid-3.0.2.tgz",
++      "integrity": "sha512-cIwzC93r3PQ/INeuwtZwkZIG2K8WWN0rRLZQhu+mr48Ay+i6sEki4GYfTsflse7hZ1BeDWrNb/Q9vgY3B31xHQ=="
++    },
++    "node_modules/@bugsnag/delivery-react-native": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/delivery-react-native/-/delivery-react-native-7.19.0.tgz",
++      "integrity": "sha512-Zzl3VOwLDU4KHmf3VweyfNeJcQgL0NzbWG+OCxjCYen093Q4sxNTpWAVBCrYPRjQ2Sq3+D3+YbQg5UUrHL7kig==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-console-breadcrumbs": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-console-breadcrumbs/-/plugin-console-breadcrumbs-7.19.0.tgz",
++      "integrity": "sha512-ZHqPAK0WpbvWjj2wwSV8+C8+K9TOyQsfZnRJ7lIadbeUUJORmFRnG0vUHKBvwxMP7bqCj8fOe/S0kKF3dfMMKA==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-network-breadcrumbs": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-network-breadcrumbs/-/plugin-network-breadcrumbs-7.19.0.tgz",
++      "integrity": "sha512-Farc0XuUoxv10kJE65zfgZlqujR7TDu8QjwxA4YDxEE41kFM8TAw0CAK15WkQK1UTsNACiiAETZGyU279eB65Q==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react/-/plugin-react-7.19.0.tgz",
++      "integrity": "sha512-owC4QXYJWGllMoOPcH5P7sbDIDuFLMCbjGAU6FwH5mBMObSQo+1ViSKImlTJQUFXATM8ySISTBVt7w3C6FFHng==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      },
++      "peerDependenciesMeta": {
++        "@bugsnag/core": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-native-client-sync": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-client-sync/-/plugin-react-native-client-sync-7.19.0.tgz",
++      "integrity": "sha512-WyK5pZuIzqVrY0h0HimwuODCo9ty9AyDY3q1pmwjrz2y8JTT21nnwUtHybLsp5Rl2oJR4tG06QkWmazgHDkWdA==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-native-event-sync": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-event-sync/-/plugin-react-native-event-sync-7.19.0.tgz",
++      "integrity": "sha512-OD73WFkDJAq8AheN2Jap+d17M1mPbEBc1Aulz9FCLs//QwlM2IOij8oarB1iF/wgK6FnIgLFEBPTZpGHuZUsyQ==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-native-global-error-handler": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-global-error-handler/-/plugin-react-native-global-error-handler-7.19.0.tgz",
++      "integrity": "sha512-zf+KIHqGEAs2ekAzJCTS0rM1nKrmpIfznBhn72xZJwyfYrh0wbvjZjClDEwxDZ24uNVUUHrIymzdqxpHqVb0lg==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-native-hermes": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-hermes/-/plugin-react-native-hermes-7.19.0.tgz",
++      "integrity": "sha512-6SGTSR6NMS2t8j02ZQ6FlA+K/nKkZqvGA+8A7WS/0M8HAShzyoMpZH10kGrU2dcCaiEtmD2T6OGBSbpF+385Dg==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-native-session": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-session/-/plugin-react-native-session-7.19.0.tgz",
++      "integrity": "sha512-PVwsUstedp9wTqJU/IKdCaMFKP2YrqHXoeBtqRTQ7FFyr0K8wsiW7nZP2jM31VS388hZWSWBlHQPA/3LZ49tNQ==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-native-unhandled-rejection": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-unhandled-rejection/-/plugin-react-native-unhandled-rejection-7.19.0.tgz",
++      "integrity": "sha512-+XDk0OoeM6MZhBh7kEalbRwFuhCZST6Y1jOostfz0fhrmT4FdgQYi1FWcPNsUTcjqv7M48pOFZNx8yWI0lGaYg==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0"
++      }
++    },
++    "node_modules/@bugsnag/plugin-react-navigation": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-navigation/-/plugin-react-navigation-7.19.0.tgz",
++      "integrity": "sha512-cDuHwykruivUZFtaIt5/MhbfRyH20X0XFrW071V+5M+rXAnpJa2AwppXwEuP7DWeER38hd2O8VqaUU2Ijes2Lw==",
++      "peerDependencies": {
++        "@bugsnag/core": "^7.0.0",
++        "@react-navigation/native": "^5.0 || ^6.0"
++      },
++      "peerDependenciesMeta": {
++        "@bugsnag/core": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/@bugsnag/react-native": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/react-native/-/react-native-7.19.0.tgz",
++      "integrity": "sha512-/cwuMbO0zwmYCvcCbF43WwDmUOxxolSoNU5kUkZq+keAyM0gTt0cLvsJHGvRVpZBe2PXOLTEUPGVBrtf3OdLVg==",
++      "dependencies": {
++        "@bugsnag/core": "^7.19.0",
++        "@bugsnag/delivery-react-native": "^7.19.0",
++        "@bugsnag/plugin-console-breadcrumbs": "^7.19.0",
++        "@bugsnag/plugin-network-breadcrumbs": "^7.19.0",
++        "@bugsnag/plugin-react": "^7.19.0",
++        "@bugsnag/plugin-react-native-client-sync": "^7.19.0",
++        "@bugsnag/plugin-react-native-event-sync": "^7.19.0",
++        "@bugsnag/plugin-react-native-global-error-handler": "^7.19.0",
++        "@bugsnag/plugin-react-native-hermes": "^7.19.0",
++        "@bugsnag/plugin-react-native-session": "^7.19.0",
++        "@bugsnag/plugin-react-native-unhandled-rejection": "^7.19.0",
++        "iserror": "^0.0.2"
++      }
++    },
++    "node_modules/@bugsnag/safe-json-stringify": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/safe-json-stringify/-/safe-json-stringify-6.0.0.tgz",
++      "integrity": "sha512-htzFO1Zc57S8kgdRK9mLcPVTW1BY2ijfH7Dk2CeZmspTWKdKqSo1iwmqrq2WtRjFlo8aRZYgLX0wFrDXF/9DLA=="
++    },
++    "node_modules/@bugsnag/source-maps": {
++      "version": "2.3.1",
++      "resolved": "https://registry.npmjs.org/@bugsnag/source-maps/-/source-maps-2.3.1.tgz",
++      "integrity": "sha512-9xJTcf5+W7+y1fQBftSOste/3ORi+d5EeCCMdvaHSX69MKQP0lrDiSYpLwX/ErcXrTbvu7nimGGKJP2vBdF7zQ==",
++      "dev": true,
++      "dependencies": {
++        "command-line-args": "^5.1.1",
++        "command-line-usage": "^6.1.0",
++        "concat-stream": "^2.0.0",
++        "consola": "^2.15.0",
++        "form-data": "^3.0.0",
++        "glob": "^7.1.6",
++        "read-pkg-up": "^7.0.1"
++      },
++      "bin": {
++        "bugsnag-source-maps": "bin/cli"
++      }
++    },
++    "node_modules/@bugsnag/source-maps/node_modules/concat-stream": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/concat-stream/-/concat-stream-2.0.0.tgz",
++      "integrity": "sha512-MWufYdFw53ccGjCA+Ol7XJYpAlW6/prSMzuPOTRnJGcGzuhLn4Scrz7qf6o8bROZ514ltazcIFJZevcfbo0x7A==",
++      "dev": true,
++      "engines": [
++        "node >= 6.0"
++      ],
++      "dependencies": {
++        "buffer-from": "^1.0.0",
++        "inherits": "^2.0.3",
++        "readable-stream": "^3.0.2",
++        "typedarray": "^0.0.6"
++      }
++    },
+     "node_modules/@cnakazawa/watch": {
+       "version": "1.0.4",
+       "resolved": "https://registry.npmjs.org/@cnakazawa/watch/-/watch-1.0.4.tgz",
+@@ -9138,6 +9314,15 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/array-back": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/array-back/-/array-back-3.1.0.tgz",
++      "integrity": "sha512-TkuxA4UCOvxuDK6NZYXCalszEzj+TLszyASooky+i742l9TqsOdYCMJJupxRic61hwquNtppB3hgcuq9SVSH1Q==",
++      "dev": true,
++      "engines": {
++        "node": ">=6"
++      }
++    },
+     "node_modules/array-buffer-byte-length": {
+       "version": "1.0.0",
+       "resolved": "https://registry.npmjs.org/array-buffer-byte-length/-/array-buffer-byte-length-1.0.0.tgz",
+@@ -11810,6 +11995,54 @@
+       "integrity": "sha512-LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w==",
+       "license": "MIT"
+     },
++    "node_modules/command-line-args": {
++      "version": "5.2.1",
++      "resolved": "https://registry.npmjs.org/command-line-args/-/command-line-args-5.2.1.tgz",
++      "integrity": "sha512-H4UfQhZyakIjC74I9d34fGYDwk3XpSr17QhEd0Q3I9Xq1CETHo4Hcuo87WyWHpAF1aSLjLRf5lD9ZGX2qStUvg==",
++      "dev": true,
++      "dependencies": {
++        "array-back": "^3.1.0",
++        "find-replace": "^3.0.0",
++        "lodash.camelcase": "^4.3.0",
++        "typical": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=4.0.0"
++      }
++    },
++    "node_modules/command-line-usage": {
++      "version": "6.1.3",
++      "resolved": "https://registry.npmjs.org/command-line-usage/-/command-line-usage-6.1.3.tgz",
++      "integrity": "sha512-sH5ZSPr+7UStsloltmDh7Ce5fb8XPlHyoPzTpyyMuYCtervL65+ubVZ6Q61cFtFl62UyJlc8/JwERRbAFPUqgw==",
++      "dev": true,
++      "dependencies": {
++        "array-back": "^4.0.2",
++        "chalk": "^2.4.2",
++        "table-layout": "^1.0.2",
++        "typical": "^5.2.0"
++      },
++      "engines": {
++        "node": ">=8.0.0"
++      }
++    },
++    "node_modules/command-line-usage/node_modules/array-back": {
++      "version": "4.0.2",
++      "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
++      "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
++      "dev": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/command-line-usage/node_modules/typical": {
++      "version": "5.2.0",
++      "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
++      "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
++      "dev": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/commander": {
+       "version": "2.20.3",
+       "resolved": "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz",
+@@ -11979,6 +12212,12 @@
+       "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==",
+       "license": "MIT"
+     },
++    "node_modules/consola": {
++      "version": "2.15.3",
++      "resolved": "https://registry.npmjs.org/consola/-/consola-2.15.3.tgz",
++      "integrity": "sha512-9vAdYbHj6x2fLKC4+oPH0kFzY/orMZyG2Aj+kNylHxKGJ/Ed4dpNyAQYwJOdqO4zdM7XpVHmyejQDcQHrnuXbw==",
++      "dev": true
++    },
+     "node_modules/console-browserify": {
+       "version": "1.2.0",
+       "resolved": "https://registry.npmjs.org/console-browserify/-/console-browserify-1.2.0.tgz",
+@@ -12832,6 +13071,15 @@
+       "integrity": "sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==",
+       "license": "MIT"
+     },
++    "node_modules/deep-extend": {
++      "version": "0.6.0",
++      "resolved": "https://registry.npmjs.org/deep-extend/-/deep-extend-0.6.0.tgz",
++      "integrity": "sha512-LOHxIOaPYdHlJRtCQfDIVZtfw/ufM8+rVj649RIHzcm/vGwQRXFt6OPqIFWsm2XEMrNIEtWR64sY1LEKD2vAOA==",
++      "dev": true,
++      "engines": {
++        "node": ">=4.0.0"
++      }
++    },
+     "node_modules/deep-is": {
+       "version": "0.1.4",
+       "resolved": "https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz",
+@@ -15562,6 +15810,18 @@
+         "node": ">=6"
+       }
+     },
++    "node_modules/find-replace": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/find-replace/-/find-replace-3.0.0.tgz",
++      "integrity": "sha512-6Tb2myMioCAgv5kfvP5/PkZZ/ntTpVK39fHY7WkWBgvbeE+VHd/tZuZ4mrC+bxh4cfOZeYKVPaJIZtZXV7GNCQ==",
++      "dev": true,
++      "dependencies": {
++        "array-back": "^3.0.1"
++      },
++      "engines": {
++        "node": ">=4.0.0"
++      }
++    },
+     "node_modules/find-root": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/find-root/-/find-root-1.1.0.tgz",
+@@ -18256,6 +18516,11 @@
+       "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==",
+       "license": "MIT"
+     },
++    "node_modules/iserror": {
++      "version": "0.0.2",
++      "resolved": "https://registry.npmjs.org/iserror/-/iserror-0.0.2.tgz",
++      "integrity": "sha512-oKGGrFVaWwETimP3SiWwjDeY27ovZoyZPHtxblC4hCq9fXxed/jasx+ATWFFjCVSRZng8VTMsN1nDnGo6zMBSw=="
++    },
+     "node_modules/isexe": {
+       "version": "2.0.0",
+       "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
+@@ -23120,6 +23385,12 @@
+       "integrity": "sha512-xYHt68QRoYGjeeM/XOE1uJtvXQAgvszfBhjV4yvsQH0u2i9I6cI6c6/eG4Hh3UAOVn0y/xAXwmTzEay49Q//HA==",
+       "license": "MIT"
+     },
++    "node_modules/lodash.camelcase": {
++      "version": "4.3.0",
++      "resolved": "https://registry.npmjs.org/lodash.camelcase/-/lodash.camelcase-4.3.0.tgz",
++      "integrity": "sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==",
++      "dev": true
++    },
+     "node_modules/lodash.debounce": {
+       "version": "4.0.8",
+       "resolved": "https://registry.npmjs.org/lodash.debounce/-/lodash.debounce-4.0.8.tgz",
+@@ -28622,6 +28893,15 @@
+         "node": ">=8"
+       }
+     },
++    "node_modules/reduce-flatten": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/reduce-flatten/-/reduce-flatten-2.0.0.tgz",
++      "integrity": "sha512-EJ4UNY/U1t2P/2k6oqotuX2Cc3T6nxJwsM0N0asT7dhrtH1ltUxDn4NalSYmPE2rCkVpcf/X6R0wDwcFpzhd4w==",
++      "dev": true,
++      "engines": {
++        "node": ">=6"
++      }
++    },
+     "node_modules/reflect-metadata": {
+       "version": "0.1.13",
+       "resolved": "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.13.tgz",
+@@ -30154,6 +30434,14 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/stack-generator": {
++      "version": "2.0.10",
++      "resolved": "https://registry.npmjs.org/stack-generator/-/stack-generator-2.0.10.tgz",
++      "integrity": "sha512-mwnua/hkqM6pF4k8SnmZ2zfETsRUpWXREfA/goT8SLCV4iOFa4bzOX2nDipWAZFPTjLvQB82f5yaodMVhK0yJQ==",
++      "dependencies": {
++        "stackframe": "^1.3.4"
++      }
++    },
+     "node_modules/stack-utils": {
+       "version": "2.0.6",
+       "resolved": "https://registry.npmjs.org/stack-utils/-/stack-utils-2.0.6.tgz",
+@@ -30176,8 +30464,9 @@
+       }
+     },
+     "node_modules/stackframe": {
+-      "version": "1.2.1",
+-      "license": "MIT"
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/stackframe/-/stackframe-1.3.4.tgz",
++      "integrity": "sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw=="
+     },
+     "node_modules/stacktrace-parser": {
+       "version": "0.1.10",
+@@ -30914,6 +31203,39 @@
+         "node": ">=10.0.0"
+       }
+     },
++    "node_modules/table-layout": {
++      "version": "1.0.2",
++      "resolved": "https://registry.npmjs.org/table-layout/-/table-layout-1.0.2.tgz",
++      "integrity": "sha512-qd/R7n5rQTRFi+Zf2sk5XVVd9UQl6ZkduPFC3S7WEGJAmetDTjY3qPN50eSKzwuzEyQKy5TN2TiZdkIjos2L6A==",
++      "dev": true,
++      "dependencies": {
++        "array-back": "^4.0.1",
++        "deep-extend": "~0.6.0",
++        "typical": "^5.2.0",
++        "wordwrapjs": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=8.0.0"
++      }
++    },
++    "node_modules/table-layout/node_modules/array-back": {
++      "version": "4.0.2",
++      "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
++      "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
++      "dev": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/table-layout/node_modules/typical": {
++      "version": "5.2.0",
++      "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
++      "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
++      "dev": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/table/node_modules/ajv": {
+       "version": "8.11.0",
+       "dev": true,
+@@ -31819,6 +32141,15 @@
+         "node": ">=4.2.0"
+       }
+     },
++    "node_modules/typical": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/typical/-/typical-4.0.0.tgz",
++      "integrity": "sha512-VAH4IvQ7BDFYglMd7BPRDfLgxZZX4O4TFcRDA6EN5X7erNJJq+McIEp8np9aVtxrCJ6qx4GTYVfOWNjcqwZgRw==",
++      "dev": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/ua-parser-js": {
+       "version": "0.7.31",
+       "funding": [
+@@ -33107,6 +33438,28 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/wordwrapjs": {
++      "version": "4.0.1",
++      "resolved": "https://registry.npmjs.org/wordwrapjs/-/wordwrapjs-4.0.1.tgz",
++      "integrity": "sha512-kKlNACbvHrkpIw6oPeYDSmdCTu2hdMHoyXLTcUKala++lx5Y+wjJ/e474Jqv5abnVmwxw08DiTuHmw69lJGksA==",
++      "dev": true,
++      "dependencies": {
++        "reduce-flatten": "^2.0.0",
++        "typical": "^5.2.0"
++      },
++      "engines": {
++        "node": ">=8.0.0"
++      }
++    },
++    "node_modules/wordwrapjs/node_modules/typical": {
++      "version": "5.2.0",
++      "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
++      "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
++      "dev": true,
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/worker-farm": {
+       "version": "1.7.0",
+       "resolved": "https://registry.npmjs.org/worker-farm/-/worker-farm-1.7.0.tgz",
+@@ -34530,6 +34883,131 @@
+       "integrity": "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==",
+       "dev": true
+     },
++    "@bugsnag/core": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/core/-/core-7.19.0.tgz",
++      "integrity": "sha512-2KGwdaLD9PhR7Wk7xPi3jGuGsKTatc/28U4TOZIDU3CgC2QhGjubwiXSECel5gwxhZ3jACKcMKSV2ovHhv1NrA==",
++      "requires": {
++        "@bugsnag/cuid": "^3.0.0",
++        "@bugsnag/safe-json-stringify": "^6.0.0",
++        "error-stack-parser": "^2.0.3",
++        "iserror": "0.0.2",
++        "stack-generator": "^2.0.3"
++      }
++    },
++    "@bugsnag/cuid": {
++      "version": "3.0.2",
++      "resolved": "https://registry.npmjs.org/@bugsnag/cuid/-/cuid-3.0.2.tgz",
++      "integrity": "sha512-cIwzC93r3PQ/INeuwtZwkZIG2K8WWN0rRLZQhu+mr48Ay+i6sEki4GYfTsflse7hZ1BeDWrNb/Q9vgY3B31xHQ=="
++    },
++    "@bugsnag/delivery-react-native": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/delivery-react-native/-/delivery-react-native-7.19.0.tgz",
++      "integrity": "sha512-Zzl3VOwLDU4KHmf3VweyfNeJcQgL0NzbWG+OCxjCYen093Q4sxNTpWAVBCrYPRjQ2Sq3+D3+YbQg5UUrHL7kig=="
++    },
++    "@bugsnag/plugin-console-breadcrumbs": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-console-breadcrumbs/-/plugin-console-breadcrumbs-7.19.0.tgz",
++      "integrity": "sha512-ZHqPAK0WpbvWjj2wwSV8+C8+K9TOyQsfZnRJ7lIadbeUUJORmFRnG0vUHKBvwxMP7bqCj8fOe/S0kKF3dfMMKA=="
++    },
++    "@bugsnag/plugin-network-breadcrumbs": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-network-breadcrumbs/-/plugin-network-breadcrumbs-7.19.0.tgz",
++      "integrity": "sha512-Farc0XuUoxv10kJE65zfgZlqujR7TDu8QjwxA4YDxEE41kFM8TAw0CAK15WkQK1UTsNACiiAETZGyU279eB65Q=="
++    },
++    "@bugsnag/plugin-react": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react/-/plugin-react-7.19.0.tgz",
++      "integrity": "sha512-owC4QXYJWGllMoOPcH5P7sbDIDuFLMCbjGAU6FwH5mBMObSQo+1ViSKImlTJQUFXATM8ySISTBVt7w3C6FFHng=="
++    },
++    "@bugsnag/plugin-react-native-client-sync": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-client-sync/-/plugin-react-native-client-sync-7.19.0.tgz",
++      "integrity": "sha512-WyK5pZuIzqVrY0h0HimwuODCo9ty9AyDY3q1pmwjrz2y8JTT21nnwUtHybLsp5Rl2oJR4tG06QkWmazgHDkWdA=="
++    },
++    "@bugsnag/plugin-react-native-event-sync": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-event-sync/-/plugin-react-native-event-sync-7.19.0.tgz",
++      "integrity": "sha512-OD73WFkDJAq8AheN2Jap+d17M1mPbEBc1Aulz9FCLs//QwlM2IOij8oarB1iF/wgK6FnIgLFEBPTZpGHuZUsyQ=="
++    },
++    "@bugsnag/plugin-react-native-global-error-handler": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-global-error-handler/-/plugin-react-native-global-error-handler-7.19.0.tgz",
++      "integrity": "sha512-zf+KIHqGEAs2ekAzJCTS0rM1nKrmpIfznBhn72xZJwyfYrh0wbvjZjClDEwxDZ24uNVUUHrIymzdqxpHqVb0lg=="
++    },
++    "@bugsnag/plugin-react-native-hermes": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-hermes/-/plugin-react-native-hermes-7.19.0.tgz",
++      "integrity": "sha512-6SGTSR6NMS2t8j02ZQ6FlA+K/nKkZqvGA+8A7WS/0M8HAShzyoMpZH10kGrU2dcCaiEtmD2T6OGBSbpF+385Dg=="
++    },
++    "@bugsnag/plugin-react-native-session": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-session/-/plugin-react-native-session-7.19.0.tgz",
++      "integrity": "sha512-PVwsUstedp9wTqJU/IKdCaMFKP2YrqHXoeBtqRTQ7FFyr0K8wsiW7nZP2jM31VS388hZWSWBlHQPA/3LZ49tNQ=="
++    },
++    "@bugsnag/plugin-react-native-unhandled-rejection": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-unhandled-rejection/-/plugin-react-native-unhandled-rejection-7.19.0.tgz",
++      "integrity": "sha512-+XDk0OoeM6MZhBh7kEalbRwFuhCZST6Y1jOostfz0fhrmT4FdgQYi1FWcPNsUTcjqv7M48pOFZNx8yWI0lGaYg=="
++    },
++    "@bugsnag/plugin-react-navigation": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-navigation/-/plugin-react-navigation-7.19.0.tgz",
++      "integrity": "sha512-cDuHwykruivUZFtaIt5/MhbfRyH20X0XFrW071V+5M+rXAnpJa2AwppXwEuP7DWeER38hd2O8VqaUU2Ijes2Lw=="
++    },
++    "@bugsnag/react-native": {
++      "version": "7.19.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/react-native/-/react-native-7.19.0.tgz",
++      "integrity": "sha512-/cwuMbO0zwmYCvcCbF43WwDmUOxxolSoNU5kUkZq+keAyM0gTt0cLvsJHGvRVpZBe2PXOLTEUPGVBrtf3OdLVg==",
++      "requires": {
++        "@bugsnag/core": "^7.19.0",
++        "@bugsnag/delivery-react-native": "^7.19.0",
++        "@bugsnag/plugin-console-breadcrumbs": "^7.19.0",
++        "@bugsnag/plugin-network-breadcrumbs": "^7.19.0",
++        "@bugsnag/plugin-react": "^7.19.0",
++        "@bugsnag/plugin-react-native-client-sync": "^7.19.0",
++        "@bugsnag/plugin-react-native-event-sync": "^7.19.0",
++        "@bugsnag/plugin-react-native-global-error-handler": "^7.19.0",
++        "@bugsnag/plugin-react-native-hermes": "^7.19.0",
++        "@bugsnag/plugin-react-native-session": "^7.19.0",
++        "@bugsnag/plugin-react-native-unhandled-rejection": "^7.19.0",
++        "iserror": "^0.0.2"
++      }
++    },
++    "@bugsnag/safe-json-stringify": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/@bugsnag/safe-json-stringify/-/safe-json-stringify-6.0.0.tgz",
++      "integrity": "sha512-htzFO1Zc57S8kgdRK9mLcPVTW1BY2ijfH7Dk2CeZmspTWKdKqSo1iwmqrq2WtRjFlo8aRZYgLX0wFrDXF/9DLA=="
++    },
++    "@bugsnag/source-maps": {
++      "version": "2.3.1",
++      "resolved": "https://registry.npmjs.org/@bugsnag/source-maps/-/source-maps-2.3.1.tgz",
++      "integrity": "sha512-9xJTcf5+W7+y1fQBftSOste/3ORi+d5EeCCMdvaHSX69MKQP0lrDiSYpLwX/ErcXrTbvu7nimGGKJP2vBdF7zQ==",
++      "dev": true,
++      "requires": {
++        "command-line-args": "^5.1.1",
++        "command-line-usage": "^6.1.0",
++        "concat-stream": "^2.0.0",
++        "consola": "^2.15.0",
++        "form-data": "^3.0.0",
++        "glob": "^7.1.6",
++        "read-pkg-up": "^7.0.1"
++      },
++      "dependencies": {
++        "concat-stream": {
++          "version": "2.0.0",
++          "resolved": "https://registry.npmjs.org/concat-stream/-/concat-stream-2.0.0.tgz",
++          "integrity": "sha512-MWufYdFw53ccGjCA+Ol7XJYpAlW6/prSMzuPOTRnJGcGzuhLn4Scrz7qf6o8bROZ514ltazcIFJZevcfbo0x7A==",
++          "dev": true,
++          "requires": {
++            "buffer-from": "^1.0.0",
++            "inherits": "^2.0.3",
++            "readable-stream": "^3.0.2",
++            "typedarray": "^0.0.6"
++          }
++        }
++      }
++    },
+     "@cnakazawa/watch": {
+       "version": "1.0.4",
+       "resolved": "https://registry.npmjs.org/@cnakazawa/watch/-/watch-1.0.4.tgz",
+@@ -39836,6 +40314,12 @@
+       "resolved": "https://registry.npmjs.org/arr-union/-/arr-union-3.1.0.tgz",
+       "integrity": "sha512-sKpyeERZ02v1FeCZT8lrfJq5u6goHCtpTAzPwJYe7c8SPFOboNjNg1vz2L4VTn9T4PQxEx13TbXLmYUcS6Ug7Q=="
+     },
++    "array-back": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/array-back/-/array-back-3.1.0.tgz",
++      "integrity": "sha512-TkuxA4UCOvxuDK6NZYXCalszEzj+TLszyASooky+i742l9TqsOdYCMJJupxRic61hwquNtppB3hgcuq9SVSH1Q==",
++      "dev": true
++    },
+     "array-buffer-byte-length": {
+       "version": "1.0.0",
+       "resolved": "https://registry.npmjs.org/array-buffer-byte-length/-/array-buffer-byte-length-1.0.0.tgz",
+@@ -41910,6 +42394,44 @@
+       "resolved": "https://registry.npmjs.org/command-exists/-/command-exists-1.2.9.tgz",
+       "integrity": "sha512-LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w=="
+     },
++    "command-line-args": {
++      "version": "5.2.1",
++      "resolved": "https://registry.npmjs.org/command-line-args/-/command-line-args-5.2.1.tgz",
++      "integrity": "sha512-H4UfQhZyakIjC74I9d34fGYDwk3XpSr17QhEd0Q3I9Xq1CETHo4Hcuo87WyWHpAF1aSLjLRf5lD9ZGX2qStUvg==",
++      "dev": true,
++      "requires": {
++        "array-back": "^3.1.0",
++        "find-replace": "^3.0.0",
++        "lodash.camelcase": "^4.3.0",
++        "typical": "^4.0.0"
++      }
++    },
++    "command-line-usage": {
++      "version": "6.1.3",
++      "resolved": "https://registry.npmjs.org/command-line-usage/-/command-line-usage-6.1.3.tgz",
++      "integrity": "sha512-sH5ZSPr+7UStsloltmDh7Ce5fb8XPlHyoPzTpyyMuYCtervL65+ubVZ6Q61cFtFl62UyJlc8/JwERRbAFPUqgw==",
++      "dev": true,
++      "requires": {
++        "array-back": "^4.0.2",
++        "chalk": "^2.4.2",
++        "table-layout": "^1.0.2",
++        "typical": "^5.2.0"
++      },
++      "dependencies": {
++        "array-back": {
++          "version": "4.0.2",
++          "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
++          "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
++          "dev": true
++        },
++        "typical": {
++          "version": "5.2.0",
++          "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
++          "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
++          "dev": true
++        }
++      }
++    },
+     "commander": {
+       "version": "2.20.3",
+       "resolved": "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz",
+@@ -42056,6 +42578,12 @@
+         }
+       }
+     },
++    "consola": {
++      "version": "2.15.3",
++      "resolved": "https://registry.npmjs.org/consola/-/consola-2.15.3.tgz",
++      "integrity": "sha512-9vAdYbHj6x2fLKC4+oPH0kFzY/orMZyG2Aj+kNylHxKGJ/Ed4dpNyAQYwJOdqO4zdM7XpVHmyejQDcQHrnuXbw==",
++      "dev": true
++    },
+     "console-browserify": {
+       "version": "1.2.0",
+       "resolved": "https://registry.npmjs.org/console-browserify/-/console-browserify-1.2.0.tgz",
+@@ -42712,6 +43240,12 @@
+         }
+       }
+     },
++    "deep-extend": {
++      "version": "0.6.0",
++      "resolved": "https://registry.npmjs.org/deep-extend/-/deep-extend-0.6.0.tgz",
++      "integrity": "sha512-LOHxIOaPYdHlJRtCQfDIVZtfw/ufM8+rVj649RIHzcm/vGwQRXFt6OPqIFWsm2XEMrNIEtWR64sY1LEKD2vAOA==",
++      "dev": true
++    },
+     "deep-is": {
+       "version": "0.1.4",
+       "resolved": "https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz",
+@@ -44742,6 +45276,15 @@
+         "pkg-dir": "^3.0.0"
+       }
+     },
++    "find-replace": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/find-replace/-/find-replace-3.0.0.tgz",
++      "integrity": "sha512-6Tb2myMioCAgv5kfvP5/PkZZ/ntTpVK39fHY7WkWBgvbeE+VHd/tZuZ4mrC+bxh4cfOZeYKVPaJIZtZXV7GNCQ==",
++      "dev": true,
++      "requires": {
++        "array-back": "^3.0.1"
++      }
++    },
+     "find-root": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/find-root/-/find-root-1.1.0.tgz",
+@@ -46695,6 +47238,11 @@
+       "resolved": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
+       "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ=="
+     },
++    "iserror": {
++      "version": "0.0.2",
++      "resolved": "https://registry.npmjs.org/iserror/-/iserror-0.0.2.tgz",
++      "integrity": "sha512-oKGGrFVaWwETimP3SiWwjDeY27ovZoyZPHtxblC4hCq9fXxed/jasx+ATWFFjCVSRZng8VTMsN1nDnGo6zMBSw=="
++    },
+     "isexe": {
+       "version": "2.0.0",
+       "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
+@@ -50212,6 +50760,12 @@
+       "resolved": "https://registry.npmjs.org/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz",
+       "integrity": "sha512-xYHt68QRoYGjeeM/XOE1uJtvXQAgvszfBhjV4yvsQH0u2i9I6cI6c6/eG4Hh3UAOVn0y/xAXwmTzEay49Q//HA=="
+     },
++    "lodash.camelcase": {
++      "version": "4.3.0",
++      "resolved": "https://registry.npmjs.org/lodash.camelcase/-/lodash.camelcase-4.3.0.tgz",
++      "integrity": "sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==",
++      "dev": true
++    },
+     "lodash.debounce": {
+       "version": "4.0.8",
+       "resolved": "https://registry.npmjs.org/lodash.debounce/-/lodash.debounce-4.0.8.tgz",
+@@ -54370,6 +54924,12 @@
+         "strip-indent": "^3.0.0"
+       }
+     },
++    "reduce-flatten": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/reduce-flatten/-/reduce-flatten-2.0.0.tgz",
++      "integrity": "sha512-EJ4UNY/U1t2P/2k6oqotuX2Cc3T6nxJwsM0N0asT7dhrtH1ltUxDn4NalSYmPE2rCkVpcf/X6R0wDwcFpzhd4w==",
++      "dev": true
++    },
+     "reflect-metadata": {
+       "version": "0.1.13",
+       "resolved": "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.13.tgz",
+@@ -55539,6 +56099,14 @@
+       "integrity": "sha512-ji9qxRnOVfcuLDySj9qzhGSEFVobyt1kIOSkj1qZzYLzq7Tos/oUUWvotUPQLlrsidqsK6tBH89Bc9kL5zHA6w==",
+       "dev": true
+     },
++    "stack-generator": {
++      "version": "2.0.10",
++      "resolved": "https://registry.npmjs.org/stack-generator/-/stack-generator-2.0.10.tgz",
++      "integrity": "sha512-mwnua/hkqM6pF4k8SnmZ2zfETsRUpWXREfA/goT8SLCV4iOFa4bzOX2nDipWAZFPTjLvQB82f5yaodMVhK0yJQ==",
++      "requires": {
++        "stackframe": "^1.3.4"
++      }
++    },
+     "stack-utils": {
+       "version": "2.0.6",
+       "resolved": "https://registry.npmjs.org/stack-utils/-/stack-utils-2.0.6.tgz",
+@@ -55557,7 +56125,9 @@
+       }
+     },
+     "stackframe": {
+-      "version": "1.2.1"
++      "version": "1.3.4",
++      "resolved": "https://registry.npmjs.org/stackframe/-/stackframe-1.3.4.tgz",
++      "integrity": "sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw=="
+     },
+     "stacktrace-parser": {
+       "version": "0.1.10",
+@@ -56183,6 +56753,32 @@
+         }
+       }
+     },
++    "table-layout": {
++      "version": "1.0.2",
++      "resolved": "https://registry.npmjs.org/table-layout/-/table-layout-1.0.2.tgz",
++      "integrity": "sha512-qd/R7n5rQTRFi+Zf2sk5XVVd9UQl6ZkduPFC3S7WEGJAmetDTjY3qPN50eSKzwuzEyQKy5TN2TiZdkIjos2L6A==",
++      "dev": true,
++      "requires": {
++        "array-back": "^4.0.1",
++        "deep-extend": "~0.6.0",
++        "typical": "^5.2.0",
++        "wordwrapjs": "^4.0.0"
++      },
++      "dependencies": {
++        "array-back": {
++          "version": "4.0.2",
++          "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
++          "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
++          "dev": true
++        },
++        "typical": {
++          "version": "5.2.0",
++          "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
++          "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
++          "dev": true
++        }
++      }
++    },
+     "tapable": {
+       "version": "1.1.3",
+       "resolved": "https://registry.npmjs.org/tapable/-/tapable-1.1.3.tgz",
+@@ -56788,6 +57384,12 @@
+       "integrity": "sha512-4xfscpisVgqqDfPaJo5vkd+Qd/ItkoagnHpufr+i2QCHBsNYp+G7UAoyFl8aPtx879u38wPV65rZ8qbGZijalA==",
+       "dev": true
+     },
++    "typical": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/typical/-/typical-4.0.0.tgz",
++      "integrity": "sha512-VAH4IvQ7BDFYglMd7BPRDfLgxZZX4O4TFcRDA6EN5X7erNJJq+McIEp8np9aVtxrCJ6qx4GTYVfOWNjcqwZgRw==",
++      "dev": true
++    },
+     "ua-parser-js": {
+       "version": "0.7.31"
+     },
+@@ -57779,6 +58381,24 @@
+       "integrity": "sha512-Hz/mrNwitNRh/HUAtM/VT/5VH+ygD6DV7mYKZAtHOrbs8U7lvPS6xf7EJKMF0uW1KJCl0H701g3ZGus+muE5vQ==",
+       "dev": true
+     },
++    "wordwrapjs": {
++      "version": "4.0.1",
++      "resolved": "https://registry.npmjs.org/wordwrapjs/-/wordwrapjs-4.0.1.tgz",
++      "integrity": "sha512-kKlNACbvHrkpIw6oPeYDSmdCTu2hdMHoyXLTcUKala++lx5Y+wjJ/e474Jqv5abnVmwxw08DiTuHmw69lJGksA==",
++      "dev": true,
++      "requires": {
++        "reduce-flatten": "^2.0.0",
++        "typical": "^5.2.0"
++      },
++      "dependencies": {
++        "typical": {
++          "version": "5.2.0",
++          "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
++          "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
++          "dev": true
++        }
++      }
++    },
+     "worker-farm": {
+       "version": "1.7.0",
+       "resolved": "https://registry.npmjs.org/worker-farm/-/worker-farm-1.7.0.tgz",
+@@ -57992,4 +58612,4 @@
+       "devOptional": true
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/app/package.json b/app/package.json
+index d2ee40b..e74520b 100644
+--- a/app/package.json
++++ b/app/package.json
+@@ -43,6 +43,8 @@
+     "@aries-framework/core": "^0.3.3",
+     "@aries-framework/react-hooks": "^0.4.0",
+     "@aries-framework/react-native": "^0.3.2",
++    "@bugsnag/plugin-react-navigation": "^7.19.0",
++    "@bugsnag/react-native": "^7.19.0",
+     "@formatjs/intl-datetimeformat": "4.2.4",
+     "@formatjs/intl-displaynames": "5.2.4",
+     "@formatjs/intl-getcanonicallocales": "1.7.3",
+@@ -107,6 +109,7 @@
+   "devDependencies": {
+     "@babel/core": "7.15.5",
+     "@babel/runtime": "7.15.4",
++    "@bugsnag/source-maps": "^2.3.1",
+     "@commitlint/cli": "^11.0.0",
+     "@react-native-community/eslint-config": "^2.0.0",
+     "@storybook/addon-actions": "^5.3.21",
+diff --git a/patch/Qc/bugsnag/bugsnag.patch b/patch/Qc/bugsnag/bugsnag.patch
+new file mode 100644
+index 0000000..19345ff
+--- /dev/null
++++ b/patch/Qc/bugsnag/bugsnag.patch
+@@ -0,0 +1,1025 @@
++diff --git a/app/android/app/src/main/AndroidManifest.xml b/app/android/app/src/main/AndroidManifest.xml
++index 289b56d..86dcbc9 100644
++--- a/app/android/app/src/main/AndroidManifest.xml
+++++ b/app/android/app/src/main/AndroidManifest.xml
++@@ -42,5 +42,6 @@
++         <data android:scheme="qcwallet"/>
++       </intent-filter>
++     </activity>
+++    <meta-data android:name="com.bugsnag.android.API_KEY" android:value="45d47f8c332138ec3f17151020797dea" />
++   </application>
++ </manifest>
++\ No newline at end of file
++diff --git a/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java b/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java
++index 235e7e0..dc77d51 100644
++--- a/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java
+++++ b/app/android/app/src/main/java/ca/qc/gouv/QCWallet/MainApplication.java
++@@ -1,5 +1,6 @@
++ package ca.qc.gouv.portefeuilleqc;
++ 
+++import com.bugsnag.android.Bugsnag;
++ import android.app.Application;
++ import android.content.Context;
++ import com.facebook.react.PackageList;
++@@ -44,6 +45,7 @@ public class MainApplication extends Application implements ReactApplication {
++   @Override
++   public void onCreate() {
++     super.onCreate();
+++    Bugsnag.start(this);
++     SoLoader.init(this, /* native exopackage */ false);
++   }
++ }
++diff --git a/app/index.js b/app/index.js
++index 862d989..09907df 100644
++--- a/app/index.js
+++++ b/app/index.js
++@@ -20,13 +20,35 @@ import '@formatjs/intl-datetimeformat/polyfill'
++ import '@formatjs/intl-datetimeformat/locale-data/en' // locale-data for en
++ import '@formatjs/intl-datetimeformat/add-all-tz' // Add ALL tz data
++ 
+++import BugsnagPluginReactNavigation from '@bugsnag/plugin-react-navigation'
+++import Bugsnag from '@bugsnag/react-native'
++ import { NavigationContainer } from '@react-navigation/native'
++ import React from 'react'
++-import { AppRegistry } from 'react-native'
+++import { AppRegistry, View, Text } from 'react-native'
++ 
++ import App from './App'
++ import { name as appName } from './app.json'
++ import qcwallet from './src/'
+++
+++Bugsnag.start({
+++  plugins: [new BugsnagPluginReactNavigation()],
+++})
+++
+++// Create the error boundary...
+++const ErrorBoundary = Bugsnag.getPlugin('react').createErrorBoundary(React)
+++
+++const ErrorView = () => (
+++  <View>
+++    <Text>Inform users of an error in the component tree.</Text>
+++  </View>
+++)
+++
+++const { createNavigationContainer } = Bugsnag.getPlugin('reactNavigation')
+++
+++// The returned BugsnagNavigationContainer has exactly the same usage
+++// except now it tracks route information to send with your error reports
+++const BugsnagNavigationContainer = createNavigationContainer(NavigationContainer)
+++
++ const { theme } = qcwallet
++ 
++ const { ColorPallet } = theme
++@@ -45,9 +67,11 @@ const navigationTheme = {
++ 
++ const Base = () => {
++   return (
++-    <NavigationContainer theme={navigationTheme}>
++-      <App />
++-    </NavigationContainer>
+++    <BugsnagNavigationContainer theme={navigationTheme}>
+++      <ErrorBoundary FallbackComponent={ErrorView}>
+++        <App />
+++      </ErrorBoundary>
+++    </BugsnagNavigationContainer>
++   )
++ }
++ AppRegistry.registerComponent(appName, () => Base)
++diff --git a/app/ios/AriesBifold.xcodeproj/project.pbxproj b/app/ios/AriesBifold.xcodeproj/project.pbxproj
++index 30bf597..afb881e 100644
++--- a/app/ios/AriesBifold.xcodeproj/project.pbxproj
+++++ b/app/ios/AriesBifold.xcodeproj/project.pbxproj
++@@ -237,6 +237,7 @@
++ 				F5B7D67D9BBF4C5FE692BB29 /* [CP] Embed Pods Frameworks */,
++ 				EB396EB204E0E4C9F6307F29 /* [CP] Copy Pods Resources */,
++ 				433E774026557E1B00F569EE /* Embed Frameworks */,
+++				4BB0D8E3BFCE43E7A16D5788 /* Upload source maps to Bugsnag */,
++ 			);
++ 			buildRules = (
++ 			);
++@@ -323,7 +324,7 @@
++ 			);
++ 			runOnlyForDeploymentPostprocessing = 0;
++ 			shellPath = /bin/sh;
++-			shellScript = "set -e\n\nexport NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
+++			shellScript = "export EXTRA_PACKAGER_ARGS=\"--sourcemap-output $TMPDIR/$(md5 -qs \"$CONFIGURATION_BUILD_DIR\")-main.jsbundle.map\"\nset -e\n\nexport NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
++ 		};
++ 		4EC0E8613979411464217753 /* [CP] Check Pods Manifest.lock */ = {
++ 			isa = PBXShellScriptBuildPhase;
++@@ -456,6 +457,20 @@
++ 			shellScript = "export RCT_METRO_PORT=\"${RCT_METRO_PORT:=8081}\"\necho \"export RCT_METRO_PORT=${RCT_METRO_PORT}\" > \"${SRCROOT}/../node_modules/react-native/scripts/.packager.env\"\nif [ -z \"${RCT_NO_LAUNCH_PACKAGER+xxx}\" ] ; then\n  if nc -w 5 -z localhost ${RCT_METRO_PORT} ; then\n    if ! curl -s \"http://localhost:${RCT_METRO_PORT}/status\" | grep -q \"packager-status:running\" ; then\n      echo \"Port ${RCT_METRO_PORT} already in use, packager is either not running or not running correctly\"\n      exit 2\n    fi\n  else\n    open \"$SRCROOT/../node_modules/react-native/scripts/launchPackager.command\" || echo \"Can't start packager automatically\"\n  fi\nfi\n";
++ 			showEnvVarsInLog = 0;
++ 		};
+++		4BB0D8E3BFCE43E7A16D5788 /* Upload source maps to Bugsnag */ = {
+++			isa = PBXShellScriptBuildPhase;
+++			buildActionMask = 2147483647;
+++			files = (
+++			);
+++			runOnlyForDeploymentPostprocessing = 0;
+++			name = "Upload source maps to Bugsnag";
+++			inputPaths = (
+++			);
+++			outputPaths = (
+++			);
+++			shellPath = /bin/sh;
+++			shellScript = "SOURCE_MAP=\"$TMPDIR/$(md5 -qs \"$CONFIGURATION_BUILD_DIR\")-main.jsbundle.map\" ../node_modules/@bugsnag/react-native/bugsnag-react-native-xcode.sh";
+++		};
++ /* End PBXShellScriptBuildPhase section */
++ 
++ /* Begin PBXSourcesBuildPhase section */
++diff --git a/app/ios/AriesBifold/AppDelegate.m b/app/ios/AriesBifold/AppDelegate.m
++index b39a42a..0ae1c0e 100644
++--- a/app/ios/AriesBifold/AppDelegate.m
+++++ b/app/ios/AriesBifold/AppDelegate.m
++@@ -1,3 +1,4 @@
+++#import <Bugsnag/Bugsnag.h>
++ #import "AppDelegate.h"
++ 
++ #import <React/RCTBridge.h>
++@@ -9,6 +10,11 @@ @implementation AppDelegate
++ 
++ - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
++ {
+++  [Bugsnag start];
+++
+++#ifdef FB_SONARKIT_ENABLED
+++  InitializeFlipper(application);
+++#endif
++ 
++   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
++   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
++diff --git a/app/ios/AriesBifold/Info.plist b/app/ios/AriesBifold/Info.plist
++index f3b7f9e..e5ca8f3 100644
++--- a/app/ios/AriesBifold/Info.plist
+++++ b/app/ios/AriesBifold/Info.plist
++@@ -1,85 +1,90 @@
++ <?xml version="1.0" encoding="UTF-8"?>
++ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++ <plist version="1.0">
+++<dict>
+++	<key>NSFaceIDUsageDescription</key>
+++	<string>$(PRODUCT_NAME) Wants to use your FaceID/TouchID to Authenticate your Identity</string>
+++	<key>CFBundleDevelopmentRegion</key>
+++	<string>en</string>
+++	<key>CFBundleDisplayName</key>
+++	<string>Portefeuille QC</string>
+++	<key>CFBundleExecutable</key>
+++	<string>$(EXECUTABLE_NAME)</string>
+++	<key>CFBundleIdentifier</key>
+++	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+++	<key>CFBundleInfoDictionaryVersion</key>
+++	<string>6.0</string>
+++	<key>CFBundleName</key>
+++	<string>$(PRODUCT_NAME)</string>
+++	<key>CFBundlePackageType</key>
+++	<string>APPL</string>
+++	<key>CFBundleShortVersionString</key>
+++	<string>$(MARKETING_VERSION)</string>
+++	<key>CFBundleSignature</key>
+++	<string>????</string>
+++	<key>CFBundleVersion</key>
+++	<string>$(CURRENT_PROJECT_VERSION)</string>
+++	<key>ITSAppUsesNonExemptEncryption</key>
+++	<false/>
+++	<key>LSRequiresIPhoneOS</key>
+++	<true/>
+++	<key>NSAppTransportSecurity</key>
++ 	<dict>
++-		<key>NSFaceIDUsageDescription</key>
++-		<string>$(PRODUCT_NAME) wants to use your FaceID/TouchID to authenticate your identity</string>
++-		<key>CFBundleDevelopmentRegion</key>
++-		<string>en</string>
++-		<key>CFBundleDisplayName</key>
++-		<string>Portefeuille QC</string>
++-		<key>CFBundleExecutable</key>
++-		<string>$(EXECUTABLE_NAME)</string>
++-		<key>CFBundleIdentifier</key>
++-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
++-		<key>CFBundleInfoDictionaryVersion</key>
++-		<string>6.0</string>
++-		<key>CFBundleName</key>
++-		<string>$(PRODUCT_NAME)</string>
++-		<key>CFBundlePackageType</key>
++-		<string>APPL</string>
++-		<key>CFBundleShortVersionString</key>
++-		<string>$(MARKETING_VERSION)</string>
++-		<key>CFBundleSignature</key>
++-		<string>????</string>
++-		<key>CFBundleVersion</key>
++-		<string>$(CURRENT_PROJECT_VERSION)</string>
++-		<key>ITSAppUsesNonExemptEncryption</key>
++-		<false/>
++-		<key>LSRequiresIPhoneOS</key>
+++		<key>NSAllowsArbitraryLoads</key>
++ 		<true/>
++-		<key>NSAppTransportSecurity</key>
+++		<key>NSExceptionDomains</key>
++ 		<dict>
++-			<key>NSAllowsArbitraryLoads</key>
++-			<true/>
++-			<key>NSExceptionDomains</key>
+++			<key>localhost</key>
++ 			<dict>
++-				<key>localhost</key>
++-				<dict>
++-					<key>NSExceptionAllowsInsecureHTTPLoads</key>
++-					<true/>
++-				</dict>
+++				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+++				<true/>
++ 			</dict>
++ 		</dict>
++-		<key>NSCameraUsageDescription</key>
++-		<string>Camera used for in-app QR Code scanning</string>
++-		<key>NSLocationWhenInUseUsageDescription</key>
++-		<string/>
++-		<key>UIAppFonts</key>
++-		<array>
++-			<string>MaterialIcons.ttf</string>
++-			<string>MaterialCommunityIcons.ttf</string>
++-			<string>BCSans-Bold.ttf</string>
++-			<string>BCSans-BoldItalic.ttf</string>
++-			<string>BCSans-Italic.ttf</string>
++-			<string>BCSans-Regular.ttf</string>
++-		</array>
++-		<key>UILaunchStoryboardName</key>
++-		<string>LaunchScreen</string>
++-		<key>UIRequiredDeviceCapabilities</key>
++-		<array>
++-			<string>armv7</string>
++-		</array>
++-		<key>UISupportedInterfaceOrientations</key>
++-		<array>
++-			<string>UIInterfaceOrientationPortrait</string>
++-		</array>
++-		<key>UIViewControllerBasedStatusBarAppearance</key>
++-		<false/>
++-		<key>CFBundleURLTypes</key>
++-		<array>
++-			<dict>
++-				<key>CFBundleURLSchemes</key>
++-				<array>
++-					<string>qcwallet</string>
++-				</array>
++-			</dict>
++-			<dict>
++-				<key>CFBundleURLSchemes</key>
++-				<array>
++-					<string>didcomm</string>
++-				</array>
++-			</dict>
++-		</array>
++ 	</dict>
+++	<key>NSCameraUsageDescription</key>
+++	<string>Camera used for in-app QR Code scanning</string>
+++	<key>NSLocationWhenInUseUsageDescription</key>
+++	<string/>
+++	<key>UIAppFonts</key>
+++	<array>
+++		<string>MaterialIcons.ttf</string>
+++		<string>MaterialCommunityIcons.ttf</string>
+++		<string>BCSans-Bold.ttf</string>
+++		<string>BCSans-BoldItalic.ttf</string>
+++		<string>BCSans-Italic.ttf</string>
+++		<string>BCSans-Regular.ttf</string>
+++	</array>
+++	<key>UILaunchStoryboardName</key>
+++	<string>LaunchScreen</string>
+++	<key>UIRequiredDeviceCapabilities</key>
+++	<array>
+++		<string>armv7</string>
+++	</array>
+++	<key>UISupportedInterfaceOrientations</key>
+++	<array>
+++		<string>UIInterfaceOrientationPortrait</string>
+++	</array>
+++	<key>UIViewControllerBasedStatusBarAppearance</key>
+++	<false/>
+++	<key>CFBundleURLTypes</key>
+++	<array>
+++		<dict>
+++			<key>CFBundleURLSchemes</key>
+++			<array>
+++				<string>bcwallet</string>
+++			</array>
+++		</dict>
+++		<dict>
+++			<key>CFBundleURLSchemes</key>
+++			<array>
+++				<string>didcomm</string>
+++			</array>
+++		</dict>
+++	</array>
+++	<key>bugsnag</key>
+++	<dict>
+++		<key>apiKey</key>
+++		<string>45d47f8c332138ec3f17151020797dea</string>
+++	</dict>
+++</dict>
++ </plist>
++diff --git a/app/ios/Podfile.lock b/app/ios/Podfile.lock
++index e995bdf..5ed4915 100644
++--- a/app/ios/Podfile.lock
+++++ b/app/ios/Podfile.lock
++@@ -1,5 +1,7 @@
++ PODS:
++   - boost (1.76.0)
+++  - BugsnagReactNative (7.19.0):
+++    - React-Core
++   - CatCrypto (0.3.2)
++   - CocoaAsyncSocket (7.6.5)
++   - DoubleConversion (1.1.6)
++@@ -387,6 +389,7 @@ PODS:
++ 
++ DEPENDENCIES:
++   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
+++  - "BugsnagReactNative (from `../node_modules/@bugsnag/react-native`)"
++   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
++   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
++   - FBReactNativeSpec (from `../node_modules/react-native/React/FBReactNativeSpec`)
++@@ -458,6 +461,8 @@ SPEC REPOS:
++ EXTERNAL SOURCES:
++   boost:
++     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
+++  BugsnagReactNative:
+++    :path: "../node_modules/@bugsnag/react-native"
++   DoubleConversion:
++     :podspec: "../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec"
++   FBLazyVector:
++@@ -571,6 +576,7 @@ EXTERNAL SOURCES:
++ 
++ SPEC CHECKSUMS:
++   boost: a7c83b31436843459a1961bfd74b96033dc77234
+++  BugsnagReactNative: fa312f53a83ca21c0afdfeaec98a9c5eeb8fc4ed
++   CatCrypto: a477899b6be4954e75be4897e732da098cc0a5a8
++   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
++   DoubleConversion: 831926d9b8bf8166fd87886c4abab286c2422662
++diff --git a/app/package-lock.json b/app/package-lock.json
++index 90bd414..c4de427 100644
++--- a/app/package-lock.json
+++++ b/app/package-lock.json
++@@ -13,6 +13,8 @@
++         "@aries-framework/core": "^0.3.3",
++         "@aries-framework/react-hooks": "^0.4.0",
++         "@aries-framework/react-native": "^0.3.2",
+++        "@bugsnag/plugin-react-navigation": "^7.19.0",
+++        "@bugsnag/react-native": "^7.19.0",
++         "@formatjs/intl-datetimeformat": "4.2.4",
++         "@formatjs/intl-displaynames": "5.2.4",
++         "@formatjs/intl-getcanonicallocales": "1.7.3",
++@@ -77,6 +79,7 @@
++       "devDependencies": {
++         "@babel/core": "7.15.5",
++         "@babel/runtime": "7.15.4",
+++        "@bugsnag/source-maps": "^2.3.1",
++         "@commitlint/cli": "^11.0.0",
++         "@react-native-community/eslint-config": "^2.0.0",
++         "@storybook/addon-actions": "^5.3.21",
++@@ -2280,6 +2283,164 @@
++       "integrity": "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==",
++       "dev": true
++     },
+++    "node_modules/@bugsnag/core": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/core/-/core-7.19.0.tgz",
+++      "integrity": "sha512-2KGwdaLD9PhR7Wk7xPi3jGuGsKTatc/28U4TOZIDU3CgC2QhGjubwiXSECel5gwxhZ3jACKcMKSV2ovHhv1NrA==",
+++      "dependencies": {
+++        "@bugsnag/cuid": "^3.0.0",
+++        "@bugsnag/safe-json-stringify": "^6.0.0",
+++        "error-stack-parser": "^2.0.3",
+++        "iserror": "0.0.2",
+++        "stack-generator": "^2.0.3"
+++      }
+++    },
+++    "node_modules/@bugsnag/cuid": {
+++      "version": "3.0.2",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/cuid/-/cuid-3.0.2.tgz",
+++      "integrity": "sha512-cIwzC93r3PQ/INeuwtZwkZIG2K8WWN0rRLZQhu+mr48Ay+i6sEki4GYfTsflse7hZ1BeDWrNb/Q9vgY3B31xHQ=="
+++    },
+++    "node_modules/@bugsnag/delivery-react-native": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/delivery-react-native/-/delivery-react-native-7.19.0.tgz",
+++      "integrity": "sha512-Zzl3VOwLDU4KHmf3VweyfNeJcQgL0NzbWG+OCxjCYen093Q4sxNTpWAVBCrYPRjQ2Sq3+D3+YbQg5UUrHL7kig==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-console-breadcrumbs": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-console-breadcrumbs/-/plugin-console-breadcrumbs-7.19.0.tgz",
+++      "integrity": "sha512-ZHqPAK0WpbvWjj2wwSV8+C8+K9TOyQsfZnRJ7lIadbeUUJORmFRnG0vUHKBvwxMP7bqCj8fOe/S0kKF3dfMMKA==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-network-breadcrumbs": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-network-breadcrumbs/-/plugin-network-breadcrumbs-7.19.0.tgz",
+++      "integrity": "sha512-Farc0XuUoxv10kJE65zfgZlqujR7TDu8QjwxA4YDxEE41kFM8TAw0CAK15WkQK1UTsNACiiAETZGyU279eB65Q==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react/-/plugin-react-7.19.0.tgz",
+++      "integrity": "sha512-owC4QXYJWGllMoOPcH5P7sbDIDuFLMCbjGAU6FwH5mBMObSQo+1ViSKImlTJQUFXATM8ySISTBVt7w3C6FFHng==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      },
+++      "peerDependenciesMeta": {
+++        "@bugsnag/core": {
+++          "optional": true
+++        }
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-native-client-sync": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-client-sync/-/plugin-react-native-client-sync-7.19.0.tgz",
+++      "integrity": "sha512-WyK5pZuIzqVrY0h0HimwuODCo9ty9AyDY3q1pmwjrz2y8JTT21nnwUtHybLsp5Rl2oJR4tG06QkWmazgHDkWdA==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-native-event-sync": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-event-sync/-/plugin-react-native-event-sync-7.19.0.tgz",
+++      "integrity": "sha512-OD73WFkDJAq8AheN2Jap+d17M1mPbEBc1Aulz9FCLs//QwlM2IOij8oarB1iF/wgK6FnIgLFEBPTZpGHuZUsyQ==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-native-global-error-handler": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-global-error-handler/-/plugin-react-native-global-error-handler-7.19.0.tgz",
+++      "integrity": "sha512-zf+KIHqGEAs2ekAzJCTS0rM1nKrmpIfznBhn72xZJwyfYrh0wbvjZjClDEwxDZ24uNVUUHrIymzdqxpHqVb0lg==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-native-hermes": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-hermes/-/plugin-react-native-hermes-7.19.0.tgz",
+++      "integrity": "sha512-6SGTSR6NMS2t8j02ZQ6FlA+K/nKkZqvGA+8A7WS/0M8HAShzyoMpZH10kGrU2dcCaiEtmD2T6OGBSbpF+385Dg==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-native-session": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-session/-/plugin-react-native-session-7.19.0.tgz",
+++      "integrity": "sha512-PVwsUstedp9wTqJU/IKdCaMFKP2YrqHXoeBtqRTQ7FFyr0K8wsiW7nZP2jM31VS388hZWSWBlHQPA/3LZ49tNQ==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-native-unhandled-rejection": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-unhandled-rejection/-/plugin-react-native-unhandled-rejection-7.19.0.tgz",
+++      "integrity": "sha512-+XDk0OoeM6MZhBh7kEalbRwFuhCZST6Y1jOostfz0fhrmT4FdgQYi1FWcPNsUTcjqv7M48pOFZNx8yWI0lGaYg==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0"
+++      }
+++    },
+++    "node_modules/@bugsnag/plugin-react-navigation": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-navigation/-/plugin-react-navigation-7.19.0.tgz",
+++      "integrity": "sha512-cDuHwykruivUZFtaIt5/MhbfRyH20X0XFrW071V+5M+rXAnpJa2AwppXwEuP7DWeER38hd2O8VqaUU2Ijes2Lw==",
+++      "peerDependencies": {
+++        "@bugsnag/core": "^7.0.0",
+++        "@react-navigation/native": "^5.0 || ^6.0"
+++      },
+++      "peerDependenciesMeta": {
+++        "@bugsnag/core": {
+++          "optional": true
+++        }
+++      }
+++    },
+++    "node_modules/@bugsnag/react-native": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/react-native/-/react-native-7.19.0.tgz",
+++      "integrity": "sha512-/cwuMbO0zwmYCvcCbF43WwDmUOxxolSoNU5kUkZq+keAyM0gTt0cLvsJHGvRVpZBe2PXOLTEUPGVBrtf3OdLVg==",
+++      "dependencies": {
+++        "@bugsnag/core": "^7.19.0",
+++        "@bugsnag/delivery-react-native": "^7.19.0",
+++        "@bugsnag/plugin-console-breadcrumbs": "^7.19.0",
+++        "@bugsnag/plugin-network-breadcrumbs": "^7.19.0",
+++        "@bugsnag/plugin-react": "^7.19.0",
+++        "@bugsnag/plugin-react-native-client-sync": "^7.19.0",
+++        "@bugsnag/plugin-react-native-event-sync": "^7.19.0",
+++        "@bugsnag/plugin-react-native-global-error-handler": "^7.19.0",
+++        "@bugsnag/plugin-react-native-hermes": "^7.19.0",
+++        "@bugsnag/plugin-react-native-session": "^7.19.0",
+++        "@bugsnag/plugin-react-native-unhandled-rejection": "^7.19.0",
+++        "iserror": "^0.0.2"
+++      }
+++    },
+++    "node_modules/@bugsnag/safe-json-stringify": {
+++      "version": "6.0.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/safe-json-stringify/-/safe-json-stringify-6.0.0.tgz",
+++      "integrity": "sha512-htzFO1Zc57S8kgdRK9mLcPVTW1BY2ijfH7Dk2CeZmspTWKdKqSo1iwmqrq2WtRjFlo8aRZYgLX0wFrDXF/9DLA=="
+++    },
+++    "node_modules/@bugsnag/source-maps": {
+++      "version": "2.3.1",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/source-maps/-/source-maps-2.3.1.tgz",
+++      "integrity": "sha512-9xJTcf5+W7+y1fQBftSOste/3ORi+d5EeCCMdvaHSX69MKQP0lrDiSYpLwX/ErcXrTbvu7nimGGKJP2vBdF7zQ==",
+++      "dev": true,
+++      "dependencies": {
+++        "command-line-args": "^5.1.1",
+++        "command-line-usage": "^6.1.0",
+++        "concat-stream": "^2.0.0",
+++        "consola": "^2.15.0",
+++        "form-data": "^3.0.0",
+++        "glob": "^7.1.6",
+++        "read-pkg-up": "^7.0.1"
+++      },
+++      "bin": {
+++        "bugsnag-source-maps": "bin/cli"
+++      }
+++    },
++     "node_modules/@cnakazawa/watch": {
++       "version": "1.0.4",
++       "resolved": "https://registry.npmjs.org/@cnakazawa/watch/-/watch-1.0.4.tgz",
++@@ -11810,6 +11971,54 @@
++       "integrity": "sha512-LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w==",
++       "license": "MIT"
++     },
+++    "node_modules/command-line-args": {
+++      "version": "5.2.1",
+++      "resolved": "https://registry.npmjs.org/command-line-args/-/command-line-args-5.2.1.tgz",
+++      "integrity": "sha512-H4UfQhZyakIjC74I9d34fGYDwk3XpSr17QhEd0Q3I9Xq1CETHo4Hcuo87WyWHpAF1aSLjLRf5lD9ZGX2qStUvg==",
+++      "dev": true,
+++      "dependencies": {
+++        "array-back": "^3.1.0",
+++        "find-replace": "^3.0.0",
+++        "lodash.camelcase": "^4.3.0",
+++        "typical": "^4.0.0"
+++      },
+++      "engines": {
+++        "node": ">=4.0.0"
+++      }
+++    },
+++    "node_modules/command-line-usage": {
+++      "version": "6.1.3",
+++      "resolved": "https://registry.npmjs.org/command-line-usage/-/command-line-usage-6.1.3.tgz",
+++      "integrity": "sha512-sH5ZSPr+7UStsloltmDh7Ce5fb8XPlHyoPzTpyyMuYCtervL65+ubVZ6Q61cFtFl62UyJlc8/JwERRbAFPUqgw==",
+++      "dev": true,
+++      "dependencies": {
+++        "array-back": "^4.0.2",
+++        "chalk": "^2.4.2",
+++        "table-layout": "^1.0.2",
+++        "typical": "^5.2.0"
+++      },
+++      "engines": {
+++        "node": ">=8.0.0"
+++      }
+++    },
+++    "node_modules/command-line-usage/node_modules/array-back": {
+++      "version": "4.0.2",
+++      "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
+++      "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">=8"
+++      }
+++    },
+++    "node_modules/command-line-usage/node_modules/typical": {
+++      "version": "5.2.0",
+++      "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
+++      "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">=8"
+++      }
+++    },
++     "node_modules/commander": {
++       "version": "2.20.3",
++       "resolved": "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz",
++@@ -11979,6 +12188,15 @@
++       "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==",
++       "license": "MIT"
++     },
+++    "node_modules/content-type": {
+++      "version": "1.0.4",
+++      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.4.tgz",
+++      "integrity": "sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">= 0.6"
+++      }
+++    },
++     "node_modules/console-browserify": {
++       "version": "1.2.0",
++       "resolved": "https://registry.npmjs.org/console-browserify/-/console-browserify-1.2.0.tgz",
++@@ -12004,9 +12222,6 @@
++       "dev": true,
++       "dependencies": {
++         "safe-buffer": "5.2.1"
++-      },
++-      "engines": {
++-        "node": ">= 0.6"
++       }
++     },
++     "node_modules/content-disposition/node_modules/safe-buffer": {
++@@ -12029,15 +12244,6 @@
++         }
++       ]
++     },
++-    "node_modules/content-type": {
++-      "version": "1.0.4",
++-      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.4.tgz",
++-      "integrity": "sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA==",
++-      "dev": true,
++-      "engines": {
++-        "node": ">= 0.6"
++-      }
++-    },
++     "node_modules/conventional-changelog-angular": {
++       "version": "5.0.13",
++       "resolved": "https://registry.npmjs.org/conventional-changelog-angular/-/conventional-changelog-angular-5.0.13.tgz",
++@@ -18256,6 +18462,11 @@
++       "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==",
++       "license": "MIT"
++     },
+++    "node_modules/iserror": {
+++      "version": "0.0.2",
+++      "resolved": "https://registry.npmjs.org/iserror/-/iserror-0.0.2.tgz",
+++      "integrity": "sha512-oKGGrFVaWwETimP3SiWwjDeY27ovZoyZPHtxblC4hCq9fXxed/jasx+ATWFFjCVSRZng8VTMsN1nDnGo6zMBSw=="
+++    },
++     "node_modules/isexe": {
++       "version": "2.0.0",
++       "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
++@@ -23120,6 +23331,12 @@
++       "integrity": "sha512-xYHt68QRoYGjeeM/XOE1uJtvXQAgvszfBhjV4yvsQH0u2i9I6cI6c6/eG4Hh3UAOVn0y/xAXwmTzEay49Q//HA==",
++       "license": "MIT"
++     },
+++    "node_modules/lodash.camelcase": {
+++      "version": "4.3.0",
+++      "resolved": "https://registry.npmjs.org/lodash.camelcase/-/lodash.camelcase-4.3.0.tgz",
+++      "integrity": "sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==",
+++      "dev": true
+++    },
++     "node_modules/lodash.debounce": {
++       "version": "4.0.8",
++       "resolved": "https://registry.npmjs.org/lodash.debounce/-/lodash.debounce-4.0.8.tgz",
++@@ -28622,6 +28839,15 @@
++         "node": ">=8"
++       }
++     },
+++    "node_modules/reduce-flatten": {
+++      "version": "2.0.0",
+++      "resolved": "https://registry.npmjs.org/reduce-flatten/-/reduce-flatten-2.0.0.tgz",
+++      "integrity": "sha512-EJ4UNY/U1t2P/2k6oqotuX2Cc3T6nxJwsM0N0asT7dhrtH1ltUxDn4NalSYmPE2rCkVpcf/X6R0wDwcFpzhd4w==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">=6"
+++      }
+++    },
++     "node_modules/reflect-metadata": {
++       "version": "0.1.13",
++       "resolved": "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.13.tgz",
++@@ -30176,8 +30402,9 @@
++       }
++     },
++     "node_modules/stackframe": {
++-      "version": "1.2.1",
++-      "license": "MIT"
+++      "version": "1.3.4",
+++      "resolved": "https://registry.npmjs.org/stackframe/-/stackframe-1.3.4.tgz",
+++      "integrity": "sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw=="
++     },
++     "node_modules/stacktrace-parser": {
++       "version": "0.1.10",
++@@ -30914,6 +31141,39 @@
++         "node": ">=10.0.0"
++       }
++     },
+++    "node_modules/table-layout": {
+++      "version": "1.0.2",
+++      "resolved": "https://registry.npmjs.org/table-layout/-/table-layout-1.0.2.tgz",
+++      "integrity": "sha512-qd/R7n5rQTRFi+Zf2sk5XVVd9UQl6ZkduPFC3S7WEGJAmetDTjY3qPN50eSKzwuzEyQKy5TN2TiZdkIjos2L6A==",
+++      "dev": true,
+++      "dependencies": {
+++        "array-back": "^4.0.1",
+++        "deep-extend": "~0.6.0",
+++        "typical": "^5.2.0",
+++        "wordwrapjs": "^4.0.0"
+++      },
+++      "engines": {
+++        "node": ">=8.0.0"
+++      }
+++    },
+++    "node_modules/table-layout/node_modules/array-back": {
+++      "version": "4.0.2",
+++      "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
+++      "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">=8"
+++      }
+++    },
+++    "node_modules/table-layout/node_modules/typical": {
+++      "version": "5.2.0",
+++      "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
+++      "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">=8"
+++      }
+++    },
++     "node_modules/table/node_modules/ajv": {
++       "version": "8.11.0",
++       "dev": true,
++@@ -31819,6 +32079,15 @@
++         "node": ">=4.2.0"
++       }
++     },
+++    "node_modules/typical": {
+++      "version": "4.0.0",
+++      "resolved": "https://registry.npmjs.org/typical/-/typical-4.0.0.tgz",
+++      "integrity": "sha512-VAH4IvQ7BDFYglMd7BPRDfLgxZZX4O4TFcRDA6EN5X7erNJJq+McIEp8np9aVtxrCJ6qx4GTYVfOWNjcqwZgRw==",
+++      "dev": true,
+++      "engines": {
+++        "node": ">=8"
+++      }
+++    },
++     "node_modules/ua-parser-js": {
++       "version": "0.7.31",
++       "funding": [
++@@ -34530,6 +34799,128 @@
++       "integrity": "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==",
++       "dev": true
++     },
+++    "@bugsnag/core": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/core/-/core-7.19.0.tgz",
+++      "integrity": "sha512-2KGwdaLD9PhR7Wk7xPi3jGuGsKTatc/28U4TOZIDU3CgC2QhGjubwiXSECel5gwxhZ3jACKcMKSV2ovHhv1NrA==",
+++      "requires": {
+++        "@bugsnag/cuid": "^3.0.0",
+++        "@bugsnag/safe-json-stringify": "^6.0.0",
+++        "error-stack-parser": "^2.0.3",
+++        "iserror": "0.0.2",
+++        "stack-generator": "^2.0.3"
+++      }
+++    },
+++    "@bugsnag/cuid": {
+++      "version": "3.0.2",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/cuid/-/cuid-3.0.2.tgz",
+++      "integrity": "sha512-cIwzC93r3PQ/INeuwtZwkZIG2K8WWN0rRLZQhu+mr48Ay+i6sEki4GYfTsflse7hZ1BeDWrNb/Q9vgY3B31xHQ=="
+++    },
+++    "@bugsnag/delivery-react-native": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/delivery-react-native/-/delivery-react-native-7.19.0.tgz",
+++      "integrity": "sha512-Zzl3VOwLDU4KHmf3VweyfNeJcQgL0NzbWG+OCxjCYen093Q4sxNTpWAVBCrYPRjQ2Sq3+D3+YbQg5UUrHL7kig==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-console-breadcrumbs": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-console-breadcrumbs/-/plugin-console-breadcrumbs-7.19.0.tgz",
+++      "integrity": "sha512-ZHqPAK0WpbvWjj2wwSV8+C8+K9TOyQsfZnRJ7lIadbeUUJORmFRnG0vUHKBvwxMP7bqCj8fOe/S0kKF3dfMMKA==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-network-breadcrumbs": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-network-breadcrumbs/-/plugin-network-breadcrumbs-7.19.0.tgz",
+++      "integrity": "sha512-Farc0XuUoxv10kJE65zfgZlqujR7TDu8QjwxA4YDxEE41kFM8TAw0CAK15WkQK1UTsNACiiAETZGyU279eB65Q==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react/-/plugin-react-7.19.0.tgz",
+++      "integrity": "sha512-owC4QXYJWGllMoOPcH5P7sbDIDuFLMCbjGAU6FwH5mBMObSQo+1ViSKImlTJQUFXATM8ySISTBVt7w3C6FFHng==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-native-client-sync": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-client-sync/-/plugin-react-native-client-sync-7.19.0.tgz",
+++      "integrity": "sha512-WyK5pZuIzqVrY0h0HimwuODCo9ty9AyDY3q1pmwjrz2y8JTT21nnwUtHybLsp5Rl2oJR4tG06QkWmazgHDkWdA==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-native-event-sync": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-event-sync/-/plugin-react-native-event-sync-7.19.0.tgz",
+++      "integrity": "sha512-OD73WFkDJAq8AheN2Jap+d17M1mPbEBc1Aulz9FCLs//QwlM2IOij8oarB1iF/wgK6FnIgLFEBPTZpGHuZUsyQ==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-native-global-error-handler": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-global-error-handler/-/plugin-react-native-global-error-handler-7.19.0.tgz",
+++      "integrity": "sha512-zf+KIHqGEAs2ekAzJCTS0rM1nKrmpIfznBhn72xZJwyfYrh0wbvjZjClDEwxDZ24uNVUUHrIymzdqxpHqVb0lg==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-native-hermes": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-hermes/-/plugin-react-native-hermes-7.19.0.tgz",
+++      "integrity": "sha512-6SGTSR6NMS2t8j02ZQ6FlA+K/nKkZqvGA+8A7WS/0M8HAShzyoMpZH10kGrU2dcCaiEtmD2T6OGBSbpF+385Dg==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-native-session": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-session/-/plugin-react-native-session-7.19.0.tgz",
+++      "integrity": "sha512-PVwsUstedp9wTqJU/IKdCaMFKP2YrqHXoeBtqRTQ7FFyr0K8wsiW7nZP2jM31VS388hZWSWBlHQPA/3LZ49tNQ==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-native-unhandled-rejection": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-native-unhandled-rejection/-/plugin-react-native-unhandled-rejection-7.19.0.tgz",
+++      "integrity": "sha512-+XDk0OoeM6MZhBh7kEalbRwFuhCZST6Y1jOostfz0fhrmT4FdgQYi1FWcPNsUTcjqv7M48pOFZNx8yWI0lGaYg==",
+++      "requires": {}
+++    },
+++    "@bugsnag/plugin-react-navigation": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/plugin-react-navigation/-/plugin-react-navigation-7.19.0.tgz",
+++      "integrity": "sha512-cDuHwykruivUZFtaIt5/MhbfRyH20X0XFrW071V+5M+rXAnpJa2AwppXwEuP7DWeER38hd2O8VqaUU2Ijes2Lw==",
+++      "requires": {}
+++    },
+++    "@bugsnag/react-native": {
+++      "version": "7.19.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/react-native/-/react-native-7.19.0.tgz",
+++      "integrity": "sha512-/cwuMbO0zwmYCvcCbF43WwDmUOxxolSoNU5kUkZq+keAyM0gTt0cLvsJHGvRVpZBe2PXOLTEUPGVBrtf3OdLVg==",
+++      "requires": {
+++        "@bugsnag/core": "^7.19.0",
+++        "@bugsnag/delivery-react-native": "^7.19.0",
+++        "@bugsnag/plugin-console-breadcrumbs": "^7.19.0",
+++        "@bugsnag/plugin-network-breadcrumbs": "^7.19.0",
+++        "@bugsnag/plugin-react": "^7.19.0",
+++        "@bugsnag/plugin-react-native-client-sync": "^7.19.0",
+++        "@bugsnag/plugin-react-native-event-sync": "^7.19.0",
+++        "@bugsnag/plugin-react-native-global-error-handler": "^7.19.0",
+++        "@bugsnag/plugin-react-native-hermes": "^7.19.0",
+++        "@bugsnag/plugin-react-native-session": "^7.19.0",
+++        "@bugsnag/plugin-react-native-unhandled-rejection": "^7.19.0",
+++        "iserror": "^0.0.2"
+++      }
+++    },
+++    "@bugsnag/safe-json-stringify": {
+++      "version": "6.0.0",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/safe-json-stringify/-/safe-json-stringify-6.0.0.tgz",
+++      "integrity": "sha512-htzFO1Zc57S8kgdRK9mLcPVTW1BY2ijfH7Dk2CeZmspTWKdKqSo1iwmqrq2WtRjFlo8aRZYgLX0wFrDXF/9DLA=="
+++    },
+++    "@bugsnag/source-maps": {
+++      "version": "2.3.1",
+++      "resolved": "https://registry.npmjs.org/@bugsnag/source-maps/-/source-maps-2.3.1.tgz",
+++      "integrity": "sha512-9xJTcf5+W7+y1fQBftSOste/3ORi+d5EeCCMdvaHSX69MKQP0lrDiSYpLwX/ErcXrTbvu7nimGGKJP2vBdF7zQ==",
+++      "dev": true,
+++      "requires": {
+++        "command-line-args": "^5.1.1",
+++        "command-line-usage": "^6.1.0",
+++        "concat-stream": "^2.0.0",
+++        "consola": "^2.15.0",
+++        "form-data": "^3.0.0",
+++        "glob": "^7.1.6",
+++        "read-pkg-up": "^7.0.1"
+++      }
+++    },
++     "@cnakazawa/watch": {
++       "version": "1.0.4",
++       "resolved": "https://registry.npmjs.org/@cnakazawa/watch/-/watch-1.0.4.tgz",
++@@ -41226,17 +41617,8 @@
++       "integrity": "sha512-YrwaA0vEKazPBkn0ipTiMpSajYDSe+KjQfrjhcBMxJt/znbvlHd8Pw/Vamaz5EB4Wfhs3SUR3Z9mwRu/P3s3Yg==",
++       "dev": true,
++       "requires": {
++-        "camelcase": "^5.3.1",
++-        "map-obj": "^4.0.0",
++-        "quick-lru": "^4.0.1"
++-      },
++-      "dependencies": {
++-        "camelcase": {
++-          "version": "5.3.1",
++-          "resolved": "https://registry.npmjs.org/camelcase/-/camelcase-5.3.1.tgz",
++-          "integrity": "sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==",
++-          "dev": true
++-        }
+++        "inherits": "^2.0.1",
+++        "safe-buffer": "^5.0.1"
++       }
++     },
++     "camelize": {
++@@ -41910,6 +42292,44 @@
++       "resolved": "https://registry.npmjs.org/command-exists/-/command-exists-1.2.9.tgz",
++       "integrity": "sha512-LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w=="
++     },
+++    "command-line-args": {
+++      "version": "5.2.1",
+++      "resolved": "https://registry.npmjs.org/command-line-args/-/command-line-args-5.2.1.tgz",
+++      "integrity": "sha512-H4UfQhZyakIjC74I9d34fGYDwk3XpSr17QhEd0Q3I9Xq1CETHo4Hcuo87WyWHpAF1aSLjLRf5lD9ZGX2qStUvg==",
+++      "dev": true,
+++      "requires": {
+++        "array-back": "^3.1.0",
+++        "find-replace": "^3.0.0",
+++        "lodash.camelcase": "^4.3.0",
+++        "typical": "^4.0.0"
+++      }
+++    },
+++    "command-line-usage": {
+++      "version": "6.1.3",
+++      "resolved": "https://registry.npmjs.org/command-line-usage/-/command-line-usage-6.1.3.tgz",
+++      "integrity": "sha512-sH5ZSPr+7UStsloltmDh7Ce5fb8XPlHyoPzTpyyMuYCtervL65+ubVZ6Q61cFtFl62UyJlc8/JwERRbAFPUqgw==",
+++      "dev": true,
+++      "requires": {
+++        "array-back": "^4.0.2",
+++        "chalk": "^2.4.2",
+++        "table-layout": "^1.0.2",
+++        "typical": "^5.2.0"
+++      },
+++      "dependencies": {
+++        "array-back": {
+++          "version": "4.0.2",
+++          "resolved": "https://registry.npmjs.org/array-back/-/array-back-4.0.2.tgz",
+++          "integrity": "sha512-NbdMezxqf94cnNfWLL7V/im0Ub+Anbb0IoZhvzie8+4HJ4nMQuzHuy49FkGYCJK2yAloZ3meiB6AVMClbrI1vg==",
+++          "dev": true
+++        },
+++        "typical": {
+++          "version": "5.2.0",
+++          "resolved": "https://registry.npmjs.org/typical/-/typical-5.2.0.tgz",
+++          "integrity": "sha512-dvdQgNDNJo+8B2uBQoqdb11eUCE1JQXhvjC/CZtgvZseVd5TYMXnq0+vuUemXbd/Se29cTaUuPX3YIc2xgbvIg==",
+++          "dev": true
+++        }
+++      }
+++    },
++     "commander": {
++       "version": "2.20.3",
++       "resolved": "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz",
++@@ -46695,6 +47115,11 @@
++       "resolved": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
++       "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ=="
++     },
+++    "iserror": {
+++      "version": "0.0.2",
+++      "resolved": "https://registry.npmjs.org/iserror/-/iserror-0.0.2.tgz",
+++      "integrity": "sha512-oKGGrFVaWwETimP3SiWwjDeY27ovZoyZPHtxblC4hCq9fXxed/jasx+ATWFFjCVSRZng8VTMsN1nDnGo6zMBSw=="
+++    },
++     "isexe": {
++       "version": "2.0.0",
++       "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
++@@ -50212,6 +50637,12 @@
++       "resolved": "https://registry.npmjs.org/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz",
++       "integrity": "sha512-xYHt68QRoYGjeeM/XOE1uJtvXQAgvszfBhjV4yvsQH0u2i9I6cI6c6/eG4Hh3UAOVn0y/xAXwmTzEay49Q//HA=="
++     },
+++    "lodash.camelcase": {
+++      "version": "4.3.0",
+++      "resolved": "https://registry.npmjs.org/lodash.camelcase/-/lodash.camelcase-4.3.0.tgz",
+++      "integrity": "sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==",
+++      "dev": true
+++    },
++     "lodash.debounce": {
++       "version": "4.0.8",
++       "resolved": "https://registry.npmjs.org/lodash.debounce/-/lodash.debounce-4.0.8.tgz",
++@@ -54370,6 +54801,12 @@
++         "strip-indent": "^3.0.0"
++       }
++     },
+++    "reduce-flatten": {
+++      "version": "2.0.0",
+++      "resolved": "https://registry.npmjs.org/reduce-flatten/-/reduce-flatten-2.0.0.tgz",
+++      "integrity": "sha512-EJ4UNY/U1t2P/2k6oqotuX2Cc3T6nxJwsM0N0asT7dhrtH1ltUxDn4NalSYmPE2rCkVpcf/X6R0wDwcFpzhd4w==",
+++      "dev": true
+++    },
++     "reflect-metadata": {
++       "version": "0.1.13",
++       "resolved": "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.13.tgz",
++@@ -55557,7 +55994,9 @@
++       }
++     },
++     "stackframe": {
++-      "version": "1.2.1"
+++      "version": "1.3.4",
+++      "resolved": "https://registry.npmjs.org/stackframe/-/stackframe-1.3.4.tgz",
+++      "integrity": "sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw=="
++     },
++     "stacktrace-parser": {
++       "version": "0.1.10",
++@@ -56788,6 +57227,12 @@
++       "integrity": "sha512-4xfscpisVgqqDfPaJo5vkd+Qd/ItkoagnHpufr+i2QCHBsNYp+G7UAoyFl8aPtx879u38wPV65rZ8qbGZijalA==",
++       "dev": true
++     },
+++    "typical": {
+++      "version": "4.0.0",
+++      "resolved": "https://registry.npmjs.org/typical/-/typical-4.0.0.tgz",
+++      "integrity": "sha512-VAH4IvQ7BDFYglMd7BPRDfLgxZZX4O4TFcRDA6EN5X7erNJJq+McIEp8np9aVtxrCJ6qx4GTYVfOWNjcqwZgRw==",
+++      "dev": true
+++    },
++     "ua-parser-js": {
++       "version": "0.7.31"
++     },
++diff --git a/app/package.json b/app/package.json
++index d2ee40b..e74520b 100644
++--- a/app/package.json
+++++ b/app/package.json
++@@ -43,6 +43,8 @@
++     "@aries-framework/core": "^0.3.3",
++     "@aries-framework/react-hooks": "^0.4.0",
++     "@aries-framework/react-native": "^0.3.2",
+++    "@bugsnag/plugin-react-navigation": "^7.19.0",
+++    "@bugsnag/react-native": "^7.19.0",
++     "@formatjs/intl-datetimeformat": "4.2.4",
++     "@formatjs/intl-displaynames": "5.2.4",
++     "@formatjs/intl-getcanonicallocales": "1.7.3",
++@@ -107,6 +109,7 @@
++   "devDependencies": {
++     "@babel/core": "7.15.5",
++     "@babel/runtime": "7.15.4",
+++    "@bugsnag/source-maps": "^2.3.1",
++     "@commitlint/cli": "^11.0.0",
++     "@react-native-community/eslint-config": "^2.0.0",
++     "@storybook/addon-actions": "^5.3.21",
